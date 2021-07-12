@@ -1,5 +1,5 @@
 ;; Prints string from address in bx
-printf:
+printf16:
     pusha    
 print_loop:
     mov al, [bx]  
