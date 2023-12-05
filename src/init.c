@@ -38,8 +38,8 @@ int main() {
 
     delay(1000000000);
 
-    /*char buff[255];
-    char *filename = "/src/init.c";
+    char buff[255];
+    char *filename = "/conf/main.cfg";
 
     print_string("Opening file: ");
     print_string(filename);
@@ -49,7 +49,7 @@ int main() {
 
     read_file(fd, buff, sizeof(buff));
 
-    print_string(buff);*/
+    print_string(buff);
 
     while(1) {
         //event loop, for now just tick...
