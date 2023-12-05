@@ -32,15 +32,13 @@ unsigned long read_file(unsigned long fd, char *buff, unsigned long size) {
 }
 
 int main() {
-    char *msg = "MyOS 0.0.0.1 Initializing...\n";
-
-    delay(1000000000);
+    char *msg = "Strelka system\n";
 
     print_string(msg);
 
     delay(1000000000);
 
-    char buff[255];
+    /*char buff[255];
     char *filename = "/src/init.c";
 
     print_string("Opening file: ");
@@ -51,7 +49,7 @@ int main() {
 
     read_file(fd, buff, sizeof(buff));
 
-    print_string(buff);
+    print_string(buff);*/
 
     while(1) {
         //event loop, for now just tick...
