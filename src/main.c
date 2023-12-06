@@ -1,6 +1,12 @@
 #include <stdio.h>
 
 int main() {
-    printf("Hello from C\n");
+    printf("Strelka system\n");
+    printf("Hello from C with static stdlib");
+
+    while(1) {
+        // loop
+    }
+
     return 0;
 }
