@@ -115,15 +115,16 @@ function getFuncType(buffer, offset) {
     for (let i=0; i<paramsCnt; i++) {
         params.push(buffer.arr[offset + 2 + i]);
     }
-    const retType = buffer.arr[offset + 2 + paramsCnt + 1];
+    const retCnt = decodeUInt32([buffer.arr[offset + 2 + paramsCnt]]);
+    const retType = retCnt > 0 ? buffer.arr[offset + 2 + paramsCnt + 1] : null;
     return {
         params,
         retType,
-        length: 2 + paramsCnt + 1 + 1/*returned cnt*/
+        length: 2 + paramsCnt + 1 + retCnt
     };
 }
 
-function runvm(buffer) {
+function runvm(buffer, imports = {}) {
     console.log('Run vm...');
 
     const sections = [];
@@ -134,23 +135,50 @@ function runvm(buffer) {
     }
 
     function call(id, stack) {
+        console.log('CALL', id, stack);
         const fnSec = sections.find(f => f.typeId === SEC_FUNC);
         const typeSec = sections.find(f => f.typeId === SEC_TYPE);        
         const codeSec = sections.find(f => f.typeId === SEC_CODE);
-
-        const {params, retType} = typeSec.types[fnSec.functions[id]];
-        const fnBlock = codeSec?.blocks[id];
-        if (fnBlock) {
-            const fnParams = [];
-            for (let i=0; i<params.length; i++) {
-                fnParams.push(stack.pop());
-            }
-
-            stack.push(fun(fnBlock.codePointer, fnParams));
-        } else {
-            console.error("Couldn't find function code block");
-        }
         
+        const fnIndex = fnSec.functions.indexOf(id); 
+        const {params, retType} = typeSec.types[id];
+
+        if (fnIndex === -1) {
+            // call from imports
+            const importFn = sections.find(f => f.typeId === SEC_IMPORT)?.imports.find(im => im.signatureIndex === id);
+            if (importFn) {
+                const module = imports[importFn.moduleName];
+                const fn = module ? module[importFn.fnName] : null;
+                if (fn) {
+                    console.log('Call extern function:', importFn, stack);
+                    const fnParams = [];
+                    for (let i=0; i<params.length; i++) {
+                        fnParams.push(stack.pop());
+                    }
+                    const result = fn(...fnParams);
+                    if (retType) stack.push(result);
+                } else {
+                    throw new Error("Couldn't execute external function. Module: " + importFn.moduleName + "." + importFn.fnName);
+                }
+            } else {
+                throw new Error("Couldn't find function inside imports. Fn id=" + id);
+            }
+        } else {
+            const fnBlock = codeSec?.blocks[id];
+            if (fnBlock) {
+                const fnParams = [];
+                for (let i=0; i<params.length; i++) {
+                    fnParams.push(stack.pop());
+                }
+    
+                const result = fun(fnBlock.codePointer, fnParams);
+                if (retType) {
+                    stack.push(result);
+                }
+            } else {
+                throw new Error("Couldn't find function code block. Fn id = " + id);
+            }
+        }        
     }
 
     function fun(addr, params) {
@@ -260,6 +288,36 @@ function runvm(buffer) {
             };
         }
 
+        function getImportSection() {
+            const sectionSize = decodeUInt32([buffer.arr[index + 1]]) + 2;
+            const importsCount = decodeUInt32([buffer.arr[index + 2]]);
+            const imports = [];
+            let offset = 0;
+
+            for (let i=0; i<importsCount; i++) {
+                const moduleNameLength = decodeUInt32([buffer.arr[index + 3 + offset + 0]]);
+                const moduleName = new TextDecoder().decode(
+                    new Uint8Array(buffer.arr.slice(index + 3 + offset + 1, index + 3 + offset + 1 + moduleNameLength)));
+                const fnNameLength = decodeUInt32([buffer.arr[index + 3 + offset + 1 + moduleNameLength]]);
+                const fnName = new TextDecoder().decode(
+                    new Uint8Array(buffer.arr.slice(index + 3 + offset + 2 + moduleNameLength, index + 3 + offset + 2 + moduleNameLength + fnNameLength)));
+                const signatureIndex = buffer.arr[index + 3 + offset + 2 + moduleNameLength + fnNameLength + 1];
+
+                imports.push({
+                    moduleName,
+                    fnName,
+                    signatureIndex
+                });
+            }
+
+            return {
+                size: sectionSize,
+                type: 'SEC_IMPORT',
+                typeId: SEC_IMPORT,
+                imports,
+            }
+        }
+
         const secType = buffer.arr[index];
         console.log('Reading section:', '0x' + secType.toString(16));
         switch (secType) {
@@ -269,6 +327,8 @@ function runvm(buffer) {
                 return getFnSection();
             case SEC_CODE:
                 return getCodeSection();
+            case SEC_IMPORT:
+                return getImportSection();
         }
         return null;
     }
@@ -289,9 +349,8 @@ function runvm(buffer) {
         }
 
         // run start function
-        const firstFnIndex = sections.find(f => f.typeId === SEC_FUNC)?.functions[0] || 0;
-        console.log('Run fn:', firstFnIndex);
-        const block = sections.find(f => f.typeId === SEC_CODE)?.blocks[firstFnIndex];
+        console.log('Run first fn block:');
+        const block = sections.find(f => f.typeId === SEC_CODE)?.blocks[0];
         if (block) {
             let fnResult = fun(block.codePointer, []);
             console.log('First function returned:', fnResult);
@@ -304,14 +363,18 @@ function runvm(buffer) {
 }
 
 function start() {
-    const module = "AGFzbQEAAAABCgJgAAF/YAF/AX8DAwIAAQoTAgkAQQoQAUEFagsHACAAQQFqCwAUBG5hbWUBBgEBA2luYwIFAgAAAQA=";
+    const module = "AGFzbQEAAAABCQJgAX8AYAABfwILAQNhcGkDbG9nAAADAgEBCg0BCwBBCkEFahAAQQALABQEbmFtZQEGAQADbG9nAgUCAAABAA==";
     const bin = getBinary(module);
 
     const {magic, version} = getWasmMeta(bin);
 
     console.log('Buffer:', bin.arr.map((b, i) => `${i}: ${b.toString(16)}`), bin.length);
 
-    runvm(bin);
+    runvm(bin, {
+        api: {
+            log: (arg) => console.log('From VM:', arg)
+        }
+    });
 }
 
 start();
