@@ -164,7 +164,7 @@ function runvm(buffer, imports = {}) {
                 throw new Error("Couldn't find function inside imports. Fn id=" + id);
             }
         } else {
-            const fnBlock = codeSec?.blocks[id];
+            const fnBlock = codeSec?.blocks[fnIndex];
             if (fnBlock) {
                 const fnParams = [];
                 for (let i=0; i<params.length; i++) {
@@ -363,7 +363,7 @@ function runvm(buffer, imports = {}) {
 }
 
 function start() {
-    const module = "AGFzbQEAAAABCQJgAX8AYAABfwILAQNhcGkDbG9nAAADAgEBCg0BCwBBCkEFahAAQQALABQEbmFtZQEGAQADbG9nAgUCAAABAA==";
+    const module = "AGFzbQEAAAABDgNgAX8AYAABf2ABfwF/AgsBA2FwaQNsb2cAAAMDAgECChkCDwBBCkEFahACEAIQAEEACwcAQQEgAGoLABsEbmFtZQELAgADbG9nAgNpbmMCBwMAAAEAAgA=";
     const bin = getBinary(module);
 
     const {magic, version} = getWasmMeta(bin);
