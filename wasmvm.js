@@ -6,6 +6,7 @@ const INSTR_I32_ADD = 0x6a;
 const INSTR_END = 0x0b;
 const INSTR_LOCAL_GET = 0x20;
 const INSTR_FUNC = 0x60;
+const INSTR_CALL = 0x10;
 
 const TYPE_I32 = 0x7f;
 const TYPE_FN = 0x60;
@@ -123,11 +124,33 @@ function getFuncType(buffer, offset) {
 }
 
 function runvm(buffer) {
-    console.log('Run vm...');    
+    console.log('Run vm...');
+
+    const sections = [];
 
     function add(stack) {
         let res = decodeSInt32([stack.pop()]) + decodeSInt32([stack.pop()]);
-        stack.push(encodeSInt32(res));
+        stack.push(encodeSInt32(res)[0]);
+    }
+
+    function call(id, stack) {
+        const fnSec = sections.find(f => f.typeId === SEC_FUNC);
+        const typeSec = sections.find(f => f.typeId === SEC_TYPE);        
+        const codeSec = sections.find(f => f.typeId === SEC_CODE);
+
+        const {params, retType} = typeSec.types[fnSec.functions[id]];
+        const fnBlock = codeSec?.blocks[id];
+        if (fnBlock) {
+            const fnParams = [];
+            for (let i=0; i<params.length; i++) {
+                fnParams.push(stack.pop());
+            }
+
+            stack.push(fun(fnBlock.codePointer, fnParams));
+        } else {
+            console.error("Couldn't find function code block");
+        }
+        
     }
 
     function fun(addr, params) {
@@ -135,23 +158,29 @@ function runvm(buffer) {
         let pointer = addr;
 
         while (pointer < buffer.length && buffer.arr[pointer] != INSTR_END) {
-            const command = buffer.arr[pointer];
-
-            console.log('Cmd:', '0x' + command.toString(16), "Stack:", stack);
+            const command = buffer.arr[pointer];            
 
             switch (command) {
                 case INSTR_I32_CONST:
+                    console.log('Cmd:', '0x' + command.toString(16), "Param:", buffer.arr[pointer + 1], "Stack:", stack);
                     stack.push(buffer.arr[pointer + 1]);
                     pointer += 2
                     break;
                 case INSTR_LOCAL_GET:
+                    console.log('Cmd:', '0x' + command.toString(16), "Param:", buffer.arr[pointer + 1], "Stack:", stack);
                     stack.push(params[buffer.arr[pointer + 1]]);
                     pointer += 2;
                     break;
+                case INSTR_CALL:
+                    console.log('Cmd:', '0x' + command.toString(16), "Param:", buffer.arr[pointer + 1], "Stack:", stack);
+                    call(buffer.arr[pointer + 1], stack);
+                    pointer += 2;
+                    break;
                 case INSTR_I32_ADD:
+                    console.log('Cmd:', '0x' + command.toString(16), "Stack:", stack);
                     add(stack);
                     pointer += 1;
-                    break;
+                    break;                    
             }
         }
 
@@ -176,6 +205,7 @@ function runvm(buffer) {
 
             return {
                 type: 'SEC_TYPE',
+                typeId: SEC_TYPE,
                 size: sectionSize,
                 types,
             }
@@ -190,9 +220,44 @@ function runvm(buffer) {
             }
             return {
                 type: 'SEC_FUNC',
+                typeId: SEC_FUNC,
                 size: sectionSize,
                 functions,
             }
+        }
+
+        function getCodeSection() {
+            const sectionSize = decodeUInt32([buffer.arr[index + 1]]) + 2;
+            const fnsCount = decodeUInt32([buffer.arr[index + 2]]);
+            const blocks = [];
+            let blockIndex = 0;
+
+            for (let i=0; i<fnsCount; i++) {
+                const blockSize = decodeUInt32([buffer.arr[index + 3 + blockIndex]]) + 1;
+                const localsCount = decodeUInt32([buffer.arr[index + 3 + blockIndex + 1]]);
+                const localsTypes = [];
+
+                for (let i=0; i<localsCount; i++) {
+                    localsTypes.push(buffer.arr[index + 3 + blockIndex + 2 + i])
+                }
+
+                const codePointer = index + 3 + blockIndex + 2 + localsCount;
+
+                blocks.push({
+                    size: blockSize,
+                    localsCount,
+                    localsTypes,
+                    codePointer
+                });
+                blockIndex += blockSize;
+            }
+
+            return {
+                type: 'SEC_CODE',
+                typeId: SEC_CODE,
+                size: sectionSize,
+                blocks
+            };
         }
 
         const secType = buffer.arr[index];
@@ -202,18 +267,14 @@ function runvm(buffer) {
                 return getTypeSection();
             case SEC_FUNC:
                 return getFnSection();
+            case SEC_CODE:
+                return getCodeSection();
         }
         return null;
     }
-    
-    function findStartFun() {
-    
-    }
 
     function startVm() {
-        let pointer = 8;
-
-        const sections = [];
+        let pointer = 8;        
 
         while (pointer < buffer.length) {
             let section = getSection(pointer);
@@ -226,13 +287,24 @@ function runvm(buffer) {
                 break;
             }
         }
+
+        // run start function
+        const firstFnIndex = sections.find(f => f.typeId === SEC_FUNC)?.functions[0] || 0;
+        console.log('Run fn:', firstFnIndex);
+        const block = sections.find(f => f.typeId === SEC_CODE)?.blocks[firstFnIndex];
+        if (block) {
+            let fnResult = fun(block.codePointer, []);
+            console.log('First function returned:', fnResult);
+        } else {
+            throw new Error("Couldn't find first function code");
+        }
     }
     startVm();
     //console.log(fun(25, [30]));
 }
 
 function start() {
-    const module = "AGFzbQEAAAABBQFgAAF/AwIBAAoKAQgAQcAAQQVqCwAKBG5hbWUCAwEAAA==";
+    const module = "AGFzbQEAAAABCgJgAAF/YAF/AX8DAwIAAQoTAgkAQQoQAUEFagsHACAAQQFqCwAUBG5hbWUBBgEBA2luYwIFAgAAAQA=";
     const bin = getBinary(module);
 
     const {magic, version} = getWasmMeta(bin);
