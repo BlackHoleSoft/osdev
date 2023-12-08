@@ -7,6 +7,9 @@ const INSTR_END = 0x0b;
 const INSTR_LOCAL_GET = 0x20;
 const INSTR_FUNC = 0x60;
 
+const TYPE_I32 = 0x7f;
+const TYPE_FN = 0x60;
+
 const SEC_CUSTOM = 0;
 const SEC_TYPE = 1;
 const SEC_IMPORT = 2;
@@ -19,6 +22,10 @@ const SEC_START = 8;
 const SEC_ELEM = 9;
 const SEC_CODE = 10;
 const SEC_DATA = 11;
+
+const typeFunctions = {
+    [TYPE_FN]: getFuncType,
+}
 
 function getBinary(base64) {
     let arr = [...Buffer.from(base64, 'base64')];
@@ -47,8 +54,8 @@ function to0x(i) {
     return i.toString(16);
 }
 
-function encodeSignedLeb128FromInt32(value) {
-    value |= 0;
+function encodeSInt32(value) {
+    /*value |= 0;
     const result = [];
     while (true) {
       const byte_ = value & 0x7f;
@@ -61,11 +68,16 @@ function encodeSignedLeb128FromInt32(value) {
         return result;
       }
       result.push(byte_ | 0x80);
-    }
+    }*/
+    return [value];
 };
 
-function decodeSignedLeb128(input) {
-    let result = 0;
+function encodeUInt32(value) {    
+    return [value];
+};
+
+function decodeSInt32(input) {
+    /*let result = 0;
     let shift = 0;
     while (true) {
       const byte = input.shift();
@@ -77,8 +89,13 @@ function decodeSignedLeb128(input) {
         }
         return result;
       }
-    }
+    }*/
+    return input[0];
   };
+
+function decodeUInt32(input) {    
+    return input[0];
+};
 
 function getWasmMeta(buf) {
     const magic = [buf.gb(0), buf.gb(1), buf.gb(2), buf.gb(3)];
@@ -91,13 +108,26 @@ function getWasmMeta(buf) {
     }
 }
 
+function getFuncType(buffer, offset) {
+    const paramsCnt = decodeUInt32([buffer.arr[offset + 1]]);
+    const params = [];
+    for (let i=0; i<paramsCnt; i++) {
+        params.push(buffer.arr[offset + 2 + i]);
+    }
+    const retType = buffer.arr[offset + 2 + paramsCnt + 1];
+    return {
+        params,
+        retType,
+        length: 2 + paramsCnt + 1 + 1/*returned cnt*/
+    };
+}
+
 function runvm(buffer) {
-    console.log('Run vm...');
-    console.log('Buffer:', buffer.arr.map((b, i) => `${i}: ${b.toString(16)}`), buffer.length);
+    console.log('Run vm...');    
 
     function add(stack) {
-        let res = decodeSignedLeb128([stack.pop()]) + decodeSignedLeb128([stack.pop()]);
-        stack.push(encodeSignedLeb128FromInt32(res));
+        let res = decodeSInt32([stack.pop()]) + decodeSInt32([stack.pop()]);
+        stack.push(encodeSInt32(res));
     }
 
     function fun(addr, params) {
@@ -128,14 +158,86 @@ function runvm(buffer) {
         return stack.pop();
     }
 
-    console.log(fun(25, [30]));
+    function getSection(index) {        
+        function getTypeSection() {
+            const sectionSize = decodeUInt32([buffer.arr[index + 1]]) + 2;
+            const typesCnt = decodeUInt32([buffer.arr[index + 2]]);
+            let secIndex = 0;
+            const types = [];
+            const startIndex = index + 3;
+
+            while (secIndex < sectionSize && types.length < typesCnt) {
+                const typeId = [buffer.arr[startIndex + secIndex]];
+                console.log("Sec type id:", typeId.toString(16));
+                const t = typeFunctions[typeId](buffer, startIndex + secIndex);
+                types.push(t);
+                secIndex += t.length;
+            }
+
+            return {
+                type: 'SEC_TYPE',
+                size: sectionSize,
+                types,
+            }
+        }
+
+        function getFnSection() {
+            const sectionSize = decodeUInt32([buffer.arr[index + 1]]) + 2;
+            const fnsCount = decodeUInt32([buffer.arr[index + 2]]);
+            const functions = [];
+            for (let i=0; i<fnsCount; i++) {
+                functions.push(buffer.arr[index + 3 + i]);
+            }
+            return {
+                type: 'SEC_FUNC',
+                size: sectionSize,
+                functions,
+            }
+        }
+
+        const secType = buffer.arr[index];
+        console.log('Reading section:', '0x' + secType.toString(16));
+        switch (secType) {
+            case SEC_TYPE:
+                return getTypeSection();
+            case SEC_FUNC:
+                return getFnSection();
+        }
+        return null;
+    }
+    
+    function findStartFun() {
+    
+    }
+
+    function startVm() {
+        let pointer = 8;
+
+        const sections = [];
+
+        while (pointer < buffer.length) {
+            let section = getSection(pointer);
+            if (section) {
+                console.log('Found section:', section);
+                sections.push(section);
+                pointer += section.size;
+            } else {
+                console.warn('Cannot find next section in binary');
+                break;
+            }
+        }
+    }
+    startVm();
+    //console.log(fun(25, [30]));
 }
 
 function start() {
-    const module = "AGFzbQEAAAABBgFgAX8BfwMCAQAKCQEHAEEHIABqCwAKBG5hbWUCAwEAAA==";
+    const module = "AGFzbQEAAAABBQFgAAF/AwIBAAoKAQgAQcAAQQVqCwAKBG5hbWUCAwEAAA==";
     const bin = getBinary(module);
 
     const {magic, version} = getWasmMeta(bin);
+
+    console.log('Buffer:', bin.arr.map((b, i) => `${i}: ${b.toString(16)}`), bin.length);
 
     runvm(bin);
 }
