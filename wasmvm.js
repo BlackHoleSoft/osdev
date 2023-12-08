@@ -7,6 +7,19 @@ const INSTR_END = 0x0b;
 const INSTR_LOCAL_GET = 0x20;
 const INSTR_FUNC = 0x60;
 
+const SEC_CUSTOM = 0;
+const SEC_TYPE = 1;
+const SEC_IMPORT = 2;
+const SEC_FUNC = 3;
+const SEC_TABLE = 4;
+const SEC_MEM = 5;
+const SEC_GLOBAL = 6;
+const SEC_EXPORT = 7;
+const SEC_START = 8;
+const SEC_ELEM = 9;
+const SEC_CODE = 10;
+const SEC_DATA = 11;
+
 function getBinary(base64) {
     let arr = [...Buffer.from(base64, 'base64')];
     let buf = {
@@ -34,6 +47,39 @@ function to0x(i) {
     return i.toString(16);
 }
 
+function encodeSignedLeb128FromInt32(value) {
+    value |= 0;
+    const result = [];
+    while (true) {
+      const byte_ = value & 0x7f;
+      value >>= 7;
+      if (
+        (value === 0 && (byte_ & 0x40) === 0) ||
+        (value === -1 && (byte_ & 0x40) !== 0)
+      ) {
+        result.push(byte_);
+        return result;
+      }
+      result.push(byte_ | 0x80);
+    }
+};
+
+function decodeSignedLeb128(input) {
+    let result = 0;
+    let shift = 0;
+    while (true) {
+      const byte = input.shift();
+      result |= (byte & 0x7f) << shift;
+      shift += 7;
+      if ((0x80 & byte) === 0) {
+        if (shift < 32 && (byte & 0x40) !== 0) {
+          return result | (~0 << shift);
+        }
+        return result;
+      }
+    }
+  };
+
 function getWasmMeta(buf) {
     const magic = [buf.gb(0), buf.gb(1), buf.gb(2), buf.gb(3)];
     console.log('magic:', magic);
@@ -50,8 +96,8 @@ function runvm(buffer) {
     console.log('Buffer:', buffer.arr.map((b, i) => `${i}: ${b.toString(16)}`), buffer.length);
 
     function add(stack) {
-        let res = stack.pop() + stack.pop();
-        stack.push(res);
+        let res = decodeSignedLeb128([stack.pop()]) + decodeSignedLeb128([stack.pop()]);
+        stack.push(encodeSignedLeb128FromInt32(res));
     }
 
     function fun(addr, params) {
@@ -82,7 +128,7 @@ function runvm(buffer) {
         return stack.pop();
     }
 
-    console.log(fun(25, [2]));
+    console.log(fun(25, [30]));
 }
 
 function start() {
