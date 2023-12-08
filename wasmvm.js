@@ -56,7 +56,7 @@ function to0x(i) {
 }
 
 function encodeSInt32(value) {
-    /*value |= 0;
+    value |= 0;
     const result = [];
     while (true) {
       const byte_ = value & 0x7f;
@@ -69,30 +69,31 @@ function encodeSInt32(value) {
         return result;
       }
       result.push(byte_ | 0x80);
-    }*/
-    return [value];
+    }
 };
 
 function encodeUInt32(value) {    
     return [value];
 };
 
-function decodeSInt32(input) {
-    /*let result = 0;
+function decodeSInt32(buffer, index) {
+    let result = 0;
     let shift = 0;
+    let input = buffer.arr.slice(index, index + 4);
+    let len = 0;
     while (true) {
+      len++;
       const byte = input.shift();
       result |= (byte & 0x7f) << shift;
       shift += 7;
       if ((0x80 & byte) === 0) {
         if (shift < 32 && (byte & 0x40) !== 0) {
-          return result | (~0 << shift);
+          return [result | (~0 << shift), len];
         }
-        return result;
+        return [result, len];
       }
-    }*/
-    return input[0];
-  };
+    }
+};
 
 function decodeUInt32(input) {    
     return input[0];
@@ -130,8 +131,8 @@ function runvm(buffer, imports = {}) {
     const sections = [];
 
     function add(stack) {
-        let res = decodeSInt32([stack.pop()]) + decodeSInt32([stack.pop()]);
-        stack.push(encodeSInt32(res)[0]);
+        let res = stack.pop() + stack.pop();
+        stack.push(res);
     }
 
     function call(id, stack) {
@@ -153,7 +154,7 @@ function runvm(buffer, imports = {}) {
                     console.log('Call extern function:', importFn, stack);
                     const fnParams = [];
                     for (let i=0; i<params.length; i++) {
-                        fnParams.push(stack.pop());
+                        fnParams.unshift(stack.pop());
                     }
                     const result = fn(...fnParams);
                     if (retType) stack.push(result);
@@ -168,7 +169,7 @@ function runvm(buffer, imports = {}) {
             if (fnBlock) {
                 const fnParams = [];
                 for (let i=0; i<params.length; i++) {
-                    fnParams.push(stack.pop());
+                    fnParams.unshift(stack.pop());
                 }
     
                 const result = fun(fnBlock.codePointer, fnParams);
@@ -191,8 +192,10 @@ function runvm(buffer, imports = {}) {
             switch (command) {
                 case INSTR_I32_CONST:
                     console.log('Cmd:', '0x' + command.toString(16), "Param:", buffer.arr[pointer + 1], "Stack:", stack);
-                    stack.push(buffer.arr[pointer + 1]);
-                    pointer += 2
+                    const [val, len] = decodeSInt32(buffer, pointer + 1);
+                    console.log('Decoded:', val, len);
+                    stack.push(val);
+                    pointer += 1 + len;
                     break;
                 case INSTR_LOCAL_GET:
                     console.log('Cmd:', '0x' + command.toString(16), "Param:", buffer.arr[pointer + 1], "Stack:", stack);
@@ -302,12 +305,15 @@ function runvm(buffer, imports = {}) {
                 const fnName = new TextDecoder().decode(
                     new Uint8Array(buffer.arr.slice(index + 3 + offset + 2 + moduleNameLength, index + 3 + offset + 2 + moduleNameLength + fnNameLength)));
                 const signatureIndex = buffer.arr[index + 3 + offset + 2 + moduleNameLength + fnNameLength + 1];
+                const blockLength = 4 + moduleNameLength + fnNameLength;
 
                 imports.push({
                     moduleName,
                     fnName,
                     signatureIndex
                 });
+
+                offset += blockLength;
             }
 
             return {
@@ -363,18 +369,24 @@ function runvm(buffer, imports = {}) {
 }
 
 function start() {
-    const module = "AGFzbQEAAAABDgNgAX8AYAABf2ABfwF/AgsBA2FwaQNsb2cAAAMDAgECChkCDwBBCkEFahACEAIQAEEACwcAQQEgAGoLABsEbmFtZQELAgADbG9nAgNpbmMCBwMAAAEAAgA=";
+    const module = "AGFzbQEAAAABEwRgAX8AYAF/AX9gAn9/AGAAAX8CKwMFaW5kZXgDbG9nAAAFaW5kZXgGZ2V0TWVtAAEFaW5kZXgGc2V0TWVtAAIDAgEDCjUBMwEBf0ECQd4BEAJBA0GtARACQQRBvgEQAkEFQe8BEAJBAhABQQFqIgAQAEEAIAAQAkEACwB+BG5hbWUBWgQAEmFzc2VtYmx5L2luZGV4L2xvZwEVYXNzZW1ibHkvaW5kZXgvZ2V0TWVtAhVhc3NlbWJseS9pbmRleC9zZXRNZW0DFWFzc2VtYmx5L2luZGV4L19zdGFydAIMBAAAAQACAAMBAAEwBA0EAAEwAQExAgEyAwEz";
     const bin = getBinary(module);
 
     const {magic, version} = getWasmMeta(bin);
 
     console.log('Buffer:', bin.arr.map((b, i) => `${i}: ${b.toString(16)}`), bin.length);
 
+    const testMem = [0, 0, 0, 0, 0, 0, 0, 0];
+
     runvm(bin, {
-        api: {
-            log: (arg) => console.log('From VM:', arg)
+        index: {
+            log: (arg) => console.log('From VM:', arg),
+            getMem: (i) => testMem[i],
+            setMem: (i, v) => testMem[i] = v,
         }
     });
+
+    console.log('Test MEM:', testMem.map((m, i) => i + ': 0x' + m.toString(16)).join(', '));    
 }
 
 start();
