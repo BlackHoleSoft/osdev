@@ -25,9 +25,17 @@ const SEC_CODE: u8 = 10;
 const SEC_DATA: u8 = 11;
 
 #[derive(Debug)]
-struct List<T> {
-    el: T,
-    next: *mut List<T>
+struct Sections {
+    sec_type: SecType,
+    sec_func: SecFunctions,
+}
+
+#[derive(Debug)]
+struct SecFunctions {
+    type_id: u8,
+    size: u8,
+    items_count: u8,
+    data: Vec<u8>,
 }
 
 #[derive(Debug)]
@@ -96,23 +104,51 @@ fn read_section_type(buffer: &[u8], offset: usize) -> SecType {
     return result;
 }
 
-fn wasm_read_sections(buffer: &[u8]) {
+fn read_section_fun(buffer: &[u8], offset: usize) -> SecFunctions {
+    let sec_size = buffer[offset + 1];
+    let items_cnt = buffer[offset + 2];
+    let mut index = 0;
+    let mut fn_vec = Vec::new();
+
+    while index < items_cnt {
+        fn_vec.push(buffer[offset + 3 + index as usize]);
+        index += 1;
+    }
+
+    return SecFunctions {
+        type_id: SEC_FUNC,
+        size: sec_size,
+        items_count: items_cnt,
+        data: fn_vec
+    };
+}
+
+fn wasm_read_sections(buffer: &[u8]) -> Sections {
     let mut pointer: usize = 8;
     let mut sec_size: u8 = 0;
+    let mut sec_type = SecType { type_id: 0, size: 0, items_count: 0, functions: Vec::new() };
+    let mut sec_fn = SecFunctions { type_id: 0, size: 0, items_count: 0, data: Vec::new() };
     //let (secType): (SecType) = (SecType {});
 
     while pointer < buffer.len() {
         let section_id: u8 = buffer[pointer];        
         if section_id == SEC_TYPE {
-            let sec_type = read_section_type(buffer, pointer);
+            sec_type = read_section_type(buffer, pointer);
             sec_size = sec_type.size;
-            println!("SecType: {:?}", sec_type);
+        } else if section_id == SEC_FUNC {
+            sec_fn = read_section_fun(buffer, pointer);
+            sec_size = sec_fn.size;
         } else {
             println!("End of sections!");
+            break;
         }         
 
         pointer += (sec_size + 2) as usize;
     }
+
+    let sections = Sections { sec_type: sec_type, sec_func: sec_fn };
+    println!("Sections: {:?}", sections);
+    return sections;
     
 }
 
