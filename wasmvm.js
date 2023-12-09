@@ -1,3 +1,5 @@
+const fs = require('fs');
+
 console.log('Run test wasm vm');
 
 // consts
@@ -369,8 +371,10 @@ function runvm(buffer, imports = {}) {
 }
 
 function start() {
-    const module = "AGFzbQEAAAABEwRgAX8AYAF/AX9gAn9/AGAAAX8CKwMFaW5kZXgDbG9nAAAFaW5kZXgGZ2V0TWVtAAEFaW5kZXgGc2V0TWVtAAIDAgEDCjUBMwEBf0ECQd4BEAJBA0GtARACQQRBvgEQAkEFQe8BEAJBAhABQQFqIgAQAEEAIAAQAkEACwB+BG5hbWUBWgQAEmFzc2VtYmx5L2luZGV4L2xvZwEVYXNzZW1ibHkvaW5kZXgvZ2V0TWVtAhVhc3NlbWJseS9pbmRleC9zZXRNZW0DFWFzc2VtYmx5L2luZGV4L19zdGFydAIMBAAAAQACAAMBAAEwBA0EAAEwAQExAgEyAwEz";
+    const module = "AGFzbQEAAAABBQFgAAF/AwIBAAoJAQcAQQVBCmoLAAoEbmFtZQIDAQAA";
     const bin = getBinary(module);
+
+    fs.writeFile("binArray.txt", JSON.stringify(bin), () => {});
 
     const {magic, version} = getWasmMeta(bin);
 
