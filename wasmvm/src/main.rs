@@ -28,6 +28,7 @@ const SEC_DATA: u8 = 11;
 struct Sections {
     sec_type: SecType,
     sec_func: SecFunctions,
+    sec_code: SecCode,
 }
 
 #[derive(Debug)]
@@ -54,6 +55,22 @@ struct SecType {
     functions: Vec<SecTypeFunction>
 }
 
+#[derive(Debug)]
+struct SecCodeFn {
+    body_size: u8,
+    locals_count: u8,
+    code_ptr: u8,
+    locals: Vec<u8>
+}
+
+#[derive(Debug)]
+struct SecCode {
+    type_id: u8,
+    size: u8,
+    items_count: u8,
+    functions: Vec<SecCodeFn>
+}
+
 fn read_binary(path: &str) -> Vec<u8> {
     let contents = fs::read(path).unwrap();
     return contents;
@@ -62,6 +79,10 @@ fn read_binary(path: &str) -> Vec<u8> {
 fn wasm_get_version(buffer: &[u8]) -> u8 {
     return buffer[4];
 }
+
+/******************/
+/**** Sections ****/
+/******************/
 
 fn read_section_type(buffer: &[u8], offset: usize) -> SecType {
     let items_cnt = buffer[offset + 2];
@@ -123,11 +144,46 @@ fn read_section_fun(buffer: &[u8], offset: usize) -> SecFunctions {
     };
 }
 
+fn read_section_code(buffer: &[u8], offset: usize) -> SecCode {
+    let sec_size = buffer[offset + 1];
+    let items_cnt = buffer[offset + 2];
+    let mut fns = Vec::new();
+    let mut index = 0;
+    let mut i = 0;
+
+    while i < items_cnt {
+        let fn_size = buffer[offset + 3 + index + 0];
+        let fn_locals = buffer[offset + 3 + index + 1];
+        let mut locals_vec = Vec::new();
+
+        while locals_vec.len() < fn_locals as usize {
+            locals_vec.push(buffer[offset + 3 + index + 2 + locals_vec.len()]);
+        }
+
+        fns.push(SecCodeFn {
+            body_size: fn_size,
+            locals_count: fn_locals,
+            code_ptr: (offset + 3 + index) as u8 + 2 + fn_locals,
+            locals: locals_vec
+        });
+        index += fn_size as usize + 1;
+        i += 1;
+    }
+
+    return SecCode {
+        size: sec_size,
+        type_id: SEC_CODE,
+        items_count: items_cnt,
+        functions: fns
+    };
+}
+
 fn wasm_read_sections(buffer: &[u8]) -> Sections {
     let mut pointer: usize = 8;
     let mut sec_size: u8 = 0;
     let mut sec_type = SecType { type_id: 0, size: 0, items_count: 0, functions: Vec::new() };
     let mut sec_fn = SecFunctions { type_id: 0, size: 0, items_count: 0, data: Vec::new() };
+    let mut sec_code = SecCode { type_id: 0, items_count: 0, size: 0, functions: Vec::new() };
     //let (secType): (SecType) = (SecType {});
 
     while pointer < buffer.len() {
@@ -138,6 +194,9 @@ fn wasm_read_sections(buffer: &[u8]) -> Sections {
         } else if section_id == SEC_FUNC {
             sec_fn = read_section_fun(buffer, pointer);
             sec_size = sec_fn.size;
+        } else if section_id == SEC_CODE {
+            sec_code = read_section_code(buffer, pointer);
+            sec_size = sec_code.size;
         } else {
             println!("End of sections!");
             break;
@@ -146,10 +205,84 @@ fn wasm_read_sections(buffer: &[u8]) -> Sections {
         pointer += (sec_size + 2) as usize;
     }
 
-    let sections = Sections { sec_type: sec_type, sec_func: sec_fn };
+    let sections = Sections { sec_type: sec_type, sec_func: sec_fn, sec_code: sec_code };
     println!("Sections: {:?}", sections);
     return sections;
     
+}
+
+/******************/
+/***** VM Loop ****/
+/******************/
+
+struct VMStack {
+    stack: [u8; 1024],
+    length: usize,
+}
+
+fn stack_push(mut stack: VMStack, value: u8) -> VMStack {    
+    stack.stack[stack.length] = value;
+    stack.length += 1;
+    return stack;
+}
+
+fn stack_pop(mut stack: VMStack) -> (u8, VMStack) {
+    stack.length -= 1;
+    return (stack.stack[stack.length], stack);
+}
+
+fn vm_loop(buffer: &[u8], start_ptr: u8, params: &[u8]) -> u8 {
+    let mut pointer = start_ptr as usize;
+    let mut stack: VMStack = VMStack { 
+        stack: [0; 1024],
+        length: 0 
+    };
+
+    while pointer < buffer.len() {
+        let cmd = buffer[pointer + 0];
+        let param = buffer[pointer + 1];
+
+        let stack_slice: &[u8] = &stack.stack[0..stack.length];
+        println!("Cmd: {cmd}; Param: {param}; Stack: {:?}", stack_slice);
+
+        if cmd == INSTR_END {
+            println!("End of function");
+            break;
+        } else if cmd == INSTR_I32_CONST {  
+            stack = stack_push(stack, param);
+            pointer += 2;
+        } else if cmd == INSTR_LOCAL_GET {
+            stack = stack_push(stack, params[param as usize]);
+            pointer += 2;
+        } else if cmd == INSTR_I32_ADD {
+            let (p1, st) = stack_pop(stack);
+            let (p2, st) = stack_pop(st);
+            stack = st;
+            println!("Add: {p1} + {p2}");
+            stack = stack_push(stack, p1 + p2);
+            pointer += 1;
+        } else {
+            pointer += 1;
+        }        
+    }
+
+    if stack.length > 0 {
+        return stack_pop(stack).0;
+    } else {
+        return 0;
+    }
+}
+
+fn instr_call(buffer: &[u8], sections: &Sections, fn_id: u8, params: &[u8]) -> u8 {
+    let fn_index = sections.sec_func.data.iter().position(|&f| f == fn_id).unwrap();
+    let code = &sections.sec_code.functions.as_slice()[fn_index];
+    return vm_loop(buffer, code.code_ptr, params);
+}
+
+fn start_vm(buffer: &[u8], sections: &Sections) {
+    println!("Start VM...");
+    let loop_result = vm_loop(buffer, sections.sec_code.functions.as_slice()[0].code_ptr, &[]);
+    println!("Start function returned: {loop_result}");
 }
 
 fn main() {
@@ -164,5 +297,6 @@ fn main() {
     let version = wasm_get_version(buffer);
     println!("Binary size: {buf_len}. WASM ver: {version}");
 
-    wasm_read_sections(buffer);
+    let sections = wasm_read_sections(buffer);
+    start_vm(buffer, &sections);
 }
