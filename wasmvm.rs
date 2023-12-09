@@ -29,7 +29,8 @@ struct SecTypeFunction<'a> {
     paramsCnt: u8,
     resultCnt: u8,
     paramsTypes: &'a[u8],
-    resultTypes: &'a[u8] 
+    resultTypes: &'a[u8],
+    next: SecTypeFunction<'a>
 }
 
 #[derive(Debug)]
@@ -37,7 +38,7 @@ struct SecType<'a> {
     typeId: u8,
     size: u8,
     itemsCount: u8,
-    functions: &'a[SecTypeFunction<'a>]
+    functions: SecTypeFunction<'a>
 }
 
 fn readBinary(path: &str) -> Vec<u8> {
@@ -56,6 +57,7 @@ fn readSectionType(buffer: &[u8], offset: usize) -> SecType {
         itemsCount: buffer[offset + 2],
         functions: &[],
     };
+    let funs: [SecTypeFunction] = [];
     return result;
 }
 
