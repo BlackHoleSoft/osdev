@@ -93,6 +93,47 @@ struct SecCode {
     functions: Vec<SecCodeFn>
 }
 
+/******************/
+/***** Utils ******/
+/******************/
+
+fn leb_decode_unsigned(buffer: &[u8], pos: u8) -> u64 {
+    let mut result: u64 = 0;
+    let mut shift = 0;
+    let mut pointer = pos;
+    loop {
+        let byte = buffer[pointer as usize];
+        result |= ((byte & !(1 << 7)) as u64) << shift;
+        if byte & (1 << 7) == 0 {
+            break;
+        }
+        shift += 7;
+        pointer += 1;
+    }
+    return result;
+}
+
+fn leb_encode_unsigned(v: u64) -> (usize, [u8; 8]) {
+    let mut result = [0; 8];
+    let mut size: usize = 0;
+    let mut value = v;
+
+    if value == 0 {
+        return (1, result);
+    }
+
+    while value != 0 {
+        let mut byte: u8 = (value & !(1 << 7)) as u8;
+        value >>= 7;
+        if value != 0 {
+            byte |= 1 << 7;
+        }
+        result[size] = byte;
+        size += 1;        
+    }
+    return (size, result);
+}
+
 fn read_binary(path: &str) -> Vec<u8> {
     let contents = fs::read(path).unwrap();
     return contents;
@@ -441,6 +482,10 @@ fn api_set_mem(addr: u8, value: u8) {
 fn main() {
     let buffer: &[u8] = &[0,97,115,109,1,0,0,0,1,19,4,96,1,127,0,96,1,127,1,127,96,2,127,127,0,96,0,1,127,2,43,3,5,105,110,100,101,120,3,108,111,103,0,0,5,105,110,100,101,120,6,103,101,116,77,101,109,0,1,5,105,110,100,101,120,6,115,101,116,77,101,109,0,2,3,3,2,3,1,10,28,2,18,0,65,2,65,5,16,2,65,2,16,1,16,4,16,0,65,0,11,7,0,65,1,32,0,106,11,0,92,4,110,97,109,101,1,72,4,0,18,97,115,115,101,109,98,108,121,47,105,110,100,101,120,47,108,111,103,1,21,97,115,115,101,109,98,108,121,47,105,110,100,101,120,47,103,101,116,77,101,109,2,21,97,115,115,101,109,98,108,121,47,105,110,100,101,120,47,115,101,116,77,101,109,4,3,105,110,99,2,11,5,0,0,1,0,2,0,3,0,4,0];
     let buf_len = buffer.len();
+
+    /*println!("LEB128 read unsigned: {:?}", leb_encode_unsigned(leb_decode_unsigned(&[17, 3, 0, 6, 0, 0], 0)));
+    println!("LEB128 read unsigned: {:?}", leb_encode_unsigned(leb_decode_unsigned(&[0x80, 0x08, 0, 6, 0, 0], 0)));
+    println!("LEB128 read unsigned: {:?}", leb_encode_unsigned(leb_decode_unsigned(&[0x81, 0xc7, 0x07, 6, 0, 0], 0)));*/
 
     if buf_len < 8 {
         println!("Binary is empty or has no data!");
