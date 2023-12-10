@@ -371,7 +371,7 @@ function runvm(buffer, imports = {}) {
 }
 
 function start() {
-    const module = "AGFzbQEAAAABBQFgAAF/AwIBAAoJAQcAQQVBCmoLAAoEbmFtZQIDAQAA";
+    const module = "AGFzbQEAAAABCgJgAAF/YAF/AX8DAwIAAQoVAgsAQQVBCmoQARABCwcAQQEgAGoLABQEbmFtZQEGAQEDaW5jAgUCAAABAA==";
     const bin = getBinary(module);
 
     fs.writeFile("binArray.txt", JSON.stringify(bin), () => {});

@@ -102,7 +102,7 @@ fn read_section_type(buffer: &[u8], offset: usize) -> SecType {
         let mut ret_vec = Vec::new();
         let mut r_i = 0;
         while r_i < result_cnt {
-            ret_vec.push(buffer[offset + index + 6 + r_i as usize]);
+            ret_vec.push(buffer[offset + index + 6 + params_cnt as usize + r_i as usize]);
             r_i += 1
         }
 
@@ -231,7 +231,7 @@ fn stack_pop(mut stack: VMStack) -> (u8, VMStack) {
     return (stack.stack[stack.length], stack);
 }
 
-fn vm_loop(buffer: &[u8], start_ptr: u8, params: &[u8]) -> u8 {
+fn vm_loop(buffer: &[u8], sections: &Sections, start_ptr: u8, params: Vec<u8>) -> u8 {
     let mut pointer = start_ptr as usize;
     let mut stack: VMStack = VMStack { 
         stack: [0; 1024],
@@ -261,6 +261,19 @@ fn vm_loop(buffer: &[u8], start_ptr: u8, params: &[u8]) -> u8 {
             println!("Add: {p1} + {p2}");
             stack = stack_push(stack, p1 + p2);
             pointer += 1;
+        } else if cmd == INSTR_CALL {
+            let fn_data = &sections.sec_type.functions[param as usize];
+            let mut i = fn_data.params_cnt;
+            let mut params = Vec::new();
+            while i > 0 {
+                let (v, st) = stack_pop(stack);
+                stack = st;
+                params.push(v);
+                i -= 1;
+            }
+            let result = instr_call(buffer, sections, param, params);
+            stack = stack_push(stack, result);
+            pointer += 2;
         } else {
             pointer += 1;
         }        
@@ -273,20 +286,29 @@ fn vm_loop(buffer: &[u8], start_ptr: u8, params: &[u8]) -> u8 {
     }
 }
 
-fn instr_call(buffer: &[u8], sections: &Sections, fn_id: u8, params: &[u8]) -> u8 {
+fn instr_call(buffer: &[u8], sections: &Sections, fn_id: u8, params: Vec<u8>) -> u8 {
+    println!("Call function: {fn_id}; {:?}", params);
     let fn_index = sections.sec_func.data.iter().position(|&f| f == fn_id).unwrap();
     let code = &sections.sec_code.functions.as_slice()[fn_index];
-    return vm_loop(buffer, code.code_ptr, params);
+    let mut all_params = Vec::new();
+    for i in params {
+        all_params.push(i);
+    }
+    for i in &code.locals {
+        all_params.push(*i);
+    }
+
+    return vm_loop(buffer, sections, code.code_ptr, all_params);
 }
 
 fn start_vm(buffer: &[u8], sections: &Sections) {
     println!("Start VM...");
-    let loop_result = vm_loop(buffer, sections.sec_code.functions.as_slice()[0].code_ptr, &[]);
+    let loop_result = vm_loop(buffer, sections, sections.sec_code.functions.as_slice()[0].code_ptr, Vec::new());
     println!("Start function returned: {loop_result}");
 }
 
 fn main() {
-    let buffer: &[u8] = &[0,97,115,109,1,0,0,0,1,5,1,96,0,1,127,3,2,1,0,10,9,1,7,0,65,5,65,10,106,11,0,10,4,110,97,109,101,2,3,1,0,0];
+    let buffer: &[u8] = &[0,97,115,109,1,0,0,0,1,10,2,96,0,1,127,96,1,127,1,127,3,3,2,0,1,10,21,2,11,0,65,5,65,10,106,16,1,16,1,11,7,0,65,1,32,0,106,11,0,20,4,110,97,109,101,1,6,1,1,3,105,110,99,2,5,2,0,0,1,0];
     let buf_len = buffer.len();
 
     if buf_len < 8 {
