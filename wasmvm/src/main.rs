@@ -24,6 +24,12 @@ const SEC_ELEM: u8 = 9;
 const SEC_CODE: u8 = 10;
 const SEC_DATA: u8 = 11;
 
+const IMPORT_FN_LOG: u8 = 0;
+const IMPORT_FN_GET_MEM: u8 = 1;
+const IMPORT_FN_SET_MEM: u8 = 2;
+
+static mut MEMORY: [u8; 256] = [0; 256];
+
 #[derive(Debug)]
 struct Sections {
     sec_type: SecType,
@@ -328,7 +334,9 @@ fn vm_loop(buffer: &[u8], sections: &Sections, start_ptr: u8, params: Vec<u8>) -
                 i -= 1;
             }
             let result = instr_call(buffer, sections, param, code_index, import_index, params);
-            stack = stack_push(stack, result);
+            if fn_data.result_cnt > 0 {
+                stack = stack_push(stack, result);
+            }
             pointer += 2;
         } else {
             pointer += 1;
@@ -369,8 +377,10 @@ fn instr_call(buffer: &[u8], sections: &Sections, fn_id: u8, code_index: i16, im
     println!("Call function: {fn_id}; {:?}", params);        
     
     let mut all_params = Vec::new();
-    for i in params {
-        all_params.push(i);
+    let mut i = params.len();
+    while i > 0 {
+        i -= 1;
+        all_params.push(params[i]);
     }
 
     if code_index >= 0 {
@@ -383,8 +393,23 @@ fn instr_call(buffer: &[u8], sections: &Sections, fn_id: u8, code_index: i16, im
     } else {
         // Call imported function
         println!("Call imported function: {import_index}");
-        return 0;
+        return call_imported(fn_id, all_params);
     }    
+}
+
+fn call_imported(fn_id: u8, params: Vec<u8>) -> u8{
+    if fn_id == IMPORT_FN_LOG {
+        api_log(params[0]);
+        return 0;
+    } else if fn_id == IMPORT_FN_GET_MEM {
+        return api_get_mem(params[0]);
+    } else if fn_id == IMPORT_FN_SET_MEM {
+        api_set_mem(params[0], params[1]);
+        return 0;
+    } else {
+        println!("Couldn't find imported function: {fn_id}");
+        return 0;
+    }
 }
 
 fn start_vm(buffer: &[u8], sections: &Sections) {
@@ -393,8 +418,28 @@ fn start_vm(buffer: &[u8], sections: &Sections) {
     println!("Start function returned: {loop_result}");
 }
 
+/******************/
+/**** API Calls ***/
+/******************/
+
+fn api_log(value: u8) {
+    println!("From VM: {value}");
+}
+
+fn api_get_mem(addr: u8) -> u8 {
+    unsafe {
+        return MEMORY[addr as usize];
+    }
+}
+
+fn api_set_mem(addr: u8, value: u8) {
+    unsafe {
+        MEMORY[addr as usize] = value;
+    }    
+}
+
 fn main() {
-    let buffer: &[u8] = &[0,97,115,109,1,0,0,0,1,19,4,96,1,127,0,96,1,127,1,127,96,2,127,127,0,96,0,1,127,2,43,3,5,105,110,100,101,120,3,108,111,103,0,0,5,105,110,100,101,120,6,103,101,116,77,101,109,0,1,5,105,110,100,101,120,6,115,101,116,77,101,109,0,2,3,3,2,3,1,10,25,2,15,0,65,5,65,10,106,16,4,16,4,16,0,65,0,11,7,0,65,1,32,0,106,11,0,92,4,110,97,109,101,1,72,4,0,18,97,115,115,101,109,98,108,121,47,105,110,100,101,120,47,108,111,103,1,21,97,115,115,101,109,98,108,121,47,105,110,100,101,120,47,103,101,116,77,101,109,2,21,97,115,115,101,109,98,108,121,47,105,110,100,101,120,47,115,101,116,77,101,109,4,3,105,110,99,2,11,5,0,0,1,0,2,0,3,0,4,0];
+    let buffer: &[u8] = &[0,97,115,109,1,0,0,0,1,19,4,96,1,127,0,96,1,127,1,127,96,2,127,127,0,96,0,1,127,2,43,3,5,105,110,100,101,120,3,108,111,103,0,0,5,105,110,100,101,120,6,103,101,116,77,101,109,0,1,5,105,110,100,101,120,6,115,101,116,77,101,109,0,2,3,3,2,3,1,10,28,2,18,0,65,2,65,5,16,2,65,2,16,1,16,4,16,0,65,0,11,7,0,65,1,32,0,106,11,0,92,4,110,97,109,101,1,72,4,0,18,97,115,115,101,109,98,108,121,47,105,110,100,101,120,47,108,111,103,1,21,97,115,115,101,109,98,108,121,47,105,110,100,101,120,47,103,101,116,77,101,109,2,21,97,115,115,101,109,98,108,121,47,105,110,100,101,120,47,115,101,116,77,101,109,4,3,105,110,99,2,11,5,0,0,1,0,2,0,3,0,4,0];
     let buf_len = buffer.len();
 
     if buf_len < 8 {
@@ -407,4 +452,8 @@ fn main() {
 
     let sections = wasm_read_sections(buffer);
     start_vm(buffer, &sections);
+
+    unsafe {
+        println!("Memory: {:?}", MEMORY);
+    }
 }
