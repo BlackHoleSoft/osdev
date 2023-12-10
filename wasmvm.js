@@ -371,7 +371,7 @@ function runvm(buffer, imports = {}) {
 }
 
 function start() {
-    const module = "AGFzbQEAAAABCgJgAAF/YAF/AX8DAwIAAQoVAgsAQQVBCmoQARABCwcAQQEgAGoLABQEbmFtZQEGAQEDaW5jAgUCAAABAA==";
+    const module = "AGFzbQEAAAABEwRgAX8AYAF/AX9gAn9/AGAAAX8CKwMFaW5kZXgDbG9nAAAFaW5kZXgGZ2V0TWVtAAEFaW5kZXgGc2V0TWVtAAIDAwIDAQoZAg8AQQVBCmoQBBAEEABBAAsHAEEBIABqCwBcBG5hbWUBSAQAEmFzc2VtYmx5L2luZGV4L2xvZwEVYXNzZW1ibHkvaW5kZXgvZ2V0TWVtAhVhc3NlbWJseS9pbmRleC9zZXRNZW0EA2luYwILBQAAAQACAAMABAA=";
     const bin = getBinary(module);
 
     fs.writeFile("binArray.txt", JSON.stringify(bin), () => {});
@@ -382,15 +382,15 @@ function start() {
 
     const testMem = [0, 0, 0, 0, 0, 0, 0, 0];
 
-    runvm(bin, {
+    /*runvm(bin, {
         index: {
             log: (arg) => console.log('From VM:', arg),
             getMem: (i) => testMem[i],
             setMem: (i, v) => testMem[i] = v,
         }
-    });
+    });*/
 
-    console.log('Test MEM:', testMem.map((m, i) => i + ': 0x' + m.toString(16)).join(', '));    
+    //console.log('Test MEM:', testMem.map((m, i) => i + ': 0x' + m.toString(16)).join(', '));    
 }
 
 start();
