@@ -97,12 +97,12 @@ struct SecCode {
 /***** Utils ******/
 /******************/
 
-fn leb_decode_unsigned(buffer: &[u8], pos: u8) -> u64 {
+fn leb_decode_unsigned(buffer: &[u8], pos: usize) -> u64 {
     let mut result: u64 = 0;
     let mut shift = 0;
     let mut pointer = pos;
     loop {
-        let byte = buffer[pointer as usize];
+        let byte = buffer[pointer];
         result |= ((byte & !(1 << 7)) as u64) << shift;
         if byte & (1 << 7) == 0 {
             break;
@@ -319,22 +319,22 @@ fn wasm_read_sections(buffer: &[u8]) -> Sections {
 /******************/
 
 struct VMStack {
-    stack: [u8; 1024],
+    stack: [i64; 1024],
     length: usize,
 }
 
-fn stack_push(mut stack: VMStack, value: u8) -> VMStack {    
+fn stack_push(mut stack: VMStack, value: i64) -> VMStack {    
     stack.stack[stack.length] = value;
     stack.length += 1;
     return stack;
 }
 
-fn stack_pop(mut stack: VMStack) -> (u8, VMStack) {
+fn stack_pop(mut stack: VMStack) -> (i64, VMStack) {
     stack.length -= 1;
     return (stack.stack[stack.length], stack);
 }
 
-fn vm_loop(buffer: &[u8], sections: &Sections, start_ptr: u8, params: Vec<u8>) -> u8 {
+fn vm_loop(buffer: &[u8], sections: &Sections, start_ptr: u8, params: Vec<i64>) -> i64 {
     let mut pointer = start_ptr as usize;
     let mut stack: VMStack = VMStack { 
         stack: [0; 1024],
@@ -345,14 +345,15 @@ fn vm_loop(buffer: &[u8], sections: &Sections, start_ptr: u8, params: Vec<u8>) -
         let cmd = buffer[pointer + 0];
         let param = buffer[pointer + 1];
 
-        let stack_slice: &[u8] = &stack.stack[0..stack.length];
+        let stack_slice: &[i64] = &stack.stack[0..stack.length];
         println!("Cmd: {cmd}; Param: {param}; Stack: {:?}", stack_slice);
 
         if cmd == INSTR_END {
             println!("End of function");
             break;
-        } else if cmd == INSTR_I32_CONST {  
-            stack = stack_push(stack, param);
+        } else if cmd == INSTR_I32_CONST {
+            let value = leb_decode_unsigned(buffer, pointer + 1);  
+            stack = stack_push(stack, value as i64);
             pointer += 2;
         } else if cmd == INSTR_LOCAL_GET {
             stack = stack_push(stack, params[param as usize]);
@@ -414,7 +415,7 @@ fn get_fn_from_sections(sections: &Sections, fn_id: u8) -> (&SecTypeFunction, i1
     return (fn_type, fn_code, fn_import);
 }
 
-fn instr_call(buffer: &[u8], sections: &Sections, fn_id: u8, code_index: i16, import_index: i16, params: Vec<u8>) -> u8 {
+fn instr_call(buffer: &[u8], sections: &Sections, fn_id: u8, code_index: i16, import_index: i16, params: Vec<i64>) -> i64 {
     println!("Call function: {fn_id}; {:?}", params);        
     
     let mut all_params = Vec::new();
@@ -427,7 +428,7 @@ fn instr_call(buffer: &[u8], sections: &Sections, fn_id: u8, code_index: i16, im
     if code_index >= 0 {
         let fn_code = &sections.sec_code.functions[code_index as usize];
         for i in &fn_code.locals {
-            all_params.push(*i);
+            all_params.push(*i as i64);
         }
     
         return vm_loop(buffer, sections, fn_code.code_ptr, all_params);
@@ -438,14 +439,14 @@ fn instr_call(buffer: &[u8], sections: &Sections, fn_id: u8, code_index: i16, im
     }    
 }
 
-fn call_imported(fn_id: u8, params: Vec<u8>) -> u8{
+fn call_imported(fn_id: u8, params: Vec<i64>) -> i64{
     if fn_id == IMPORT_FN_LOG {
         api_log(params[0]);
         return 0;
     } else if fn_id == IMPORT_FN_GET_MEM {
-        return api_get_mem(params[0]);
+        return api_get_mem(params[0]) as i64;
     } else if fn_id == IMPORT_FN_SET_MEM {
-        api_set_mem(params[0], params[1]);
+        api_set_mem(params[0], params[1] as u8);
         return 0;
     } else {
         println!("Couldn't find imported function: {fn_id}");
@@ -463,24 +464,27 @@ fn start_vm(buffer: &[u8], sections: &Sections) {
 /**** API Calls ***/
 /******************/
 
-fn api_log(value: u8) {
+fn api_log(value: i64) {
     println!("From VM: {value}");
 }
 
-fn api_get_mem(addr: u8) -> u8 {
-    unsafe {
+fn api_get_mem(addr: i64) -> u8 {
+    /*unsafe {
         return MEMORY[addr as usize];
-    }
+    }*/
+    println!("GET MEMORY: {addr}");
+    return 0;
 }
 
-fn api_set_mem(addr: u8, value: u8) {
-    unsafe {
+fn api_set_mem(addr: i64, value: u8) {
+    /*unsafe {
         MEMORY[addr as usize] = value;
-    }    
+    }*/   
+    println!("SET MEMORY: {addr}; {value}"); 
 }
 
 fn main() {
-    let buffer: &[u8] = &[0,97,115,109,1,0,0,0,1,19,4,96,1,127,0,96,1,127,1,127,96,2,127,127,0,96,0,1,127,2,43,3,5,105,110,100,101,120,3,108,111,103,0,0,5,105,110,100,101,120,6,103,101,116,77,101,109,0,1,5,105,110,100,101,120,6,115,101,116,77,101,109,0,2,3,3,2,3,1,10,28,2,18,0,65,2,65,5,16,2,65,2,16,1,16,4,16,0,65,0,11,7,0,65,1,32,0,106,11,0,92,4,110,97,109,101,1,72,4,0,18,97,115,115,101,109,98,108,121,47,105,110,100,101,120,47,108,111,103,1,21,97,115,115,101,109,98,108,121,47,105,110,100,101,120,47,103,101,116,77,101,109,2,21,97,115,115,101,109,98,108,121,47,105,110,100,101,120,47,115,101,116,77,101,109,4,3,105,110,99,2,11,5,0,0,1,0,2,0,3,0,4,0];
+    let buffer: &[u8] = &[0,97,115,109,1,0,0,0,1,19,4,96,1,127,0,96,1,127,1,127,96,2,127,127,0,96,0,1,127,2,43,3,5,105,110,100,101,120,3,108,111,103,0,0,5,105,110,100,101,120,6,103,101,116,77,101,109,0,1,5,105,110,100,101,120,6,115,101,116,77,101,109,0,2,3,2,1,3,10,22,1,20,0,65,128,128,46,65,3,16,2,65,129,128,46,65,12,16,2,65,0,11,0,85,4,110,97,109,101,1,67,3,0,18,97,115,115,101,109,98,108,121,47,105,110,100,101,120,47,108,111,103,1,21,97,115,115,101,109,98,108,121,47,105,110,100,101,120,47,103,101,116,77,101,109,2,21,97,115,115,101,109,98,108,121,47,105,110,100,101,120,47,115,101,116,77,101,109,2,9,4,0,0,1,0,2,0,3,0];
     let buf_len = buffer.len();
 
     /*println!("LEB128 read unsigned: {:?}", leb_encode_unsigned(leb_decode_unsigned(&[17, 3, 0, 6, 0, 0], 0)));
