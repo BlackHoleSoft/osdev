@@ -30,6 +30,13 @@ const IMPORT_FN_SET_MEM: u8 = 2;
 
 static mut MEMORY: [u8; 256] = [0; 256];
 
+
+#[derive(Debug)]
+struct VEC<T> {
+    arr: [Option<T>; 32],
+    pointer: i32
+}
+
 #[derive(Debug)]
 struct Sections {
     sec_type: SecType,
@@ -96,6 +103,32 @@ struct SecCode {
 /******************/
 /***** Utils ******/
 /******************/
+
+fn vec_new<T>() -> VEC<T> {
+    return VEC {
+        arr: [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+        pointer: -1
+    };
+}
+
+fn vec_len<T>(vec: &VEC<T>) -> i32 {
+    return vec.pointer + 1;
+}
+
+fn vec_push<T>(mut vec: VEC<T>, item: T) -> VEC<T> {    
+    vec.pointer += 1;
+    vec.arr[vec.pointer as usize] = Some(item);
+    return vec;
+}
+
+fn vec_get<T>(vec: &VEC<T>, index: usize) -> &Option<T> {    
+        if index > vec.pointer as usize || vec.arr[vec.pointer as usize].is_none() {
+            return &None;
+        }
+        let result = &vec.arr[index];
+
+        return result;
+}
 
 fn leb_decode_unsigned(buffer: &[u8], pos: usize) -> u64 {
     let mut result: u64 = 0;
@@ -490,6 +523,19 @@ fn main() {
     /*println!("LEB128 read unsigned: {:?}", leb_encode_unsigned(leb_decode_unsigned(&[17, 3, 0, 6, 0, 0], 0)));
     println!("LEB128 read unsigned: {:?}", leb_encode_unsigned(leb_decode_unsigned(&[0x80, 0x08, 0, 6, 0, 0], 0)));
     println!("LEB128 read unsigned: {:?}", leb_encode_unsigned(leb_decode_unsigned(&[0x81, 0xc7, 0x07, 6, 0, 0], 0)));*/
+
+    let mut test_vec: VEC<i32> = vec_new();
+    println!("Vec created");
+    test_vec = vec_push(test_vec, 777);
+    test_vec = vec_push(test_vec, 666);
+    //test_vec = vec_push(test_vec, 888);
+    println!("Vec items pushed");
+    let val = *vec_get(&test_vec, 1);
+    let disp_val: i32 = val.expect("Err");
+    println!("Vec item get: {disp_val}");
+    let len = vec_len(&test_vec);
+
+    println!("Len: {len}");
 
     if buf_len < 8 {
         println!("Binary is empty or has no data!");
