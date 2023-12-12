@@ -40,6 +40,16 @@ const IMPORT_FN_LOG: u8 = 0;
 const IMPORT_FN_GET_MEM: u8 = 1;
 const IMPORT_FN_SET_MEM: u8 = 2;
 
+static mut MEMORY: [u8; 256] = [0; 256];
+
+
+#[derive(Debug)]
+struct VEC<T> {
+    arr: [Option<T>; 32],
+    pointer: i32
+}
+
+#[derive(Debug)]
 struct Sections {
     sec_type: SecType,
     sec_func: SecFunctions,
@@ -47,57 +57,90 @@ struct Sections {
     sec_import: SecImport
 }
 
+#[derive(Debug)]
 struct SecImportItem {
     signature_id: u8,
     kind: u8,
     empty: bool,
 }
 
+#[derive(Debug)]
 struct SecImport {
     type_id: u8,
     size: u8,
     items_count: u8,
-    items: Vec<SecImportItem>
+    items: VEC<SecImportItem>
 }
 
+#[derive(Debug)]
 struct SecFunctions {
     type_id: u8,
     size: u8,
     items_count: u8,
-    data: Vec<u8>,
+    data: VEC<u8>,
 }
 
+#[derive(Debug)]
 struct SecTypeFunction {
     params_cnt: u8,
     result_cnt: u8,
-    params_types: Vec<u8>,
-    result_types: Vec<u8>,    
+    params_types: VEC<u8>,
+    result_types: VEC<u8>,    
 }
 
+#[derive(Debug)]
 struct SecType {
     type_id: u8,
     size: u8,
     items_count: u8,
-    functions: Vec<SecTypeFunction>
+    functions: VEC<SecTypeFunction>
 }
 
+#[derive(Debug)]
 struct SecCodeFn {
     body_size: u8,
     locals_count: u8,
     code_ptr: u8,
-    locals: Vec<u8>
+    locals: VEC<u8>
 }
 
+#[derive(Debug)]
 struct SecCode {
     type_id: u8,
     size: u8,
     items_count: u8,
-    functions: Vec<SecCodeFn>
+    functions: VEC<SecCodeFn>
 }
 
 /******************/
 /***** Utils ******/
 /******************/
+
+fn vec_new<T>() -> VEC<T> {
+    return VEC {
+        arr: [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+        pointer: -1
+    };
+}
+
+fn vec_len<T>(vec: &VEC<T>) -> i32 {
+    return vec.pointer + 1;
+}
+
+fn vec_push<T>(mut vec: VEC<T>, item: T) -> VEC<T> {    
+    vec.pointer += 1;
+    vec.arr[vec.pointer as usize] = Some(item);
+    return vec;
+}
+
+fn vec_get<T>(vec: &VEC<T>, index: usize) -> &Option<T> {    
+        if index > vec.pointer as usize || vec.arr[vec.pointer as usize].is_none() {
+            return &None;
+        }
+        let result = &vec.arr[index];
+
+        return result;
+}
 
 fn leb_decode_unsigned(buffer: &[u8], pos: usize) -> u64 {
     let mut result: u64 = 0;
@@ -146,27 +189,27 @@ fn wasm_get_version(buffer: &[u8]) -> u8 {
 
 fn read_section_type(buffer: &[u8], offset: usize) -> SecType {
     let items_cnt = buffer[offset + 2];
-    let mut fn_vec = Vec::new();
+    let mut fn_vec = vec_new();
     let mut index = 0;
 
-    while fn_vec.len() < items_cnt as usize {        
+    while vec_len(&fn_vec) < items_cnt as i32 {        
         let params_cnt: u8 = buffer[offset + index + 4];
-        let mut params_vec = Vec::new();
+        let mut params_vec = vec_new();
         let mut p_i = 0;
         while p_i < params_cnt {
-            params_vec.push(buffer[offset + index + 5 + p_i as usize]);
+            params_vec = vec_push(params_vec, buffer[offset + index + 5 + p_i as usize]);
             p_i += 1;
         }
 
         let result_cnt: u8 = buffer[offset + index + 5 + params_cnt as usize];
-        let mut ret_vec = Vec::new();
+        let mut ret_vec = vec_new();
         let mut r_i = 0;
         while r_i < result_cnt {
-            ret_vec.push(buffer[offset + index + 6 + params_cnt as usize + r_i as usize]);
+            ret_vec = vec_push(ret_vec, buffer[offset + index + 6 + params_cnt as usize + r_i as usize]);
             r_i += 1
         }
 
-        fn_vec.push(SecTypeFunction {
+        fn_vec = vec_push(fn_vec, SecTypeFunction {
             params_cnt: params_cnt,
             result_cnt: result_cnt,
             params_types: params_vec,
@@ -188,7 +231,7 @@ fn read_section_type(buffer: &[u8], offset: usize) -> SecType {
 fn read_section_import(buffer: &[u8], offset: usize) -> SecImport {
     let sec_size = buffer[offset + 1];
     let items_cnt = buffer[offset + 2];
-    let mut items = Vec::new();
+    let mut items = vec_new();
     let mut i = 0;
     let mut index = 0;
 
@@ -198,7 +241,7 @@ fn read_section_import(buffer: &[u8], offset: usize) -> SecImport {
         let fn_kind = buffer[offset + 3 + index + 2 + (module_name_len + fn_name_len) as usize];
         let fn_id = buffer[offset + 3 + index + 3 + (module_name_len + fn_name_len) as usize];
 
-        items.push(SecImportItem {
+        items = vec_push(items, SecImportItem {
             kind: fn_kind,
             signature_id: fn_id,
             empty: false
@@ -220,10 +263,10 @@ fn read_section_fun(buffer: &[u8], offset: usize) -> SecFunctions {
     let sec_size = buffer[offset + 1];
     let items_cnt = buffer[offset + 2];
     let mut index = 0;
-    let mut fn_vec = Vec::new();
+    let mut fn_vec = vec_new();
 
     while index < items_cnt {
-        fn_vec.push(buffer[offset + 3 + index as usize]);
+        fn_vec = vec_push(fn_vec, buffer[offset + 3 + index as usize]);
         index += 1;
     }
 
@@ -238,20 +281,22 @@ fn read_section_fun(buffer: &[u8], offset: usize) -> SecFunctions {
 fn read_section_code(buffer: &[u8], offset: usize) -> SecCode {
     let sec_size = buffer[offset + 1];
     let items_cnt = buffer[offset + 2];
-    let mut fns = Vec::new();
+    let mut fns = vec_new();
     let mut index = 0;
     let mut i = 0;
 
     while i < items_cnt {
         let fn_size = buffer[offset + 3 + index + 0];
         let fn_locals = buffer[offset + 3 + index + 1];
-        let mut locals_vec = Vec::new();
+        let mut locals_vec = vec_new();
 
-        while locals_vec.len() < fn_locals as usize {
-            locals_vec.push(buffer[offset + 3 + index + 2 + locals_vec.len()]);
+        let mut j = 0;
+        while j < fn_locals as i32 {
+            locals_vec = vec_push(locals_vec, buffer[offset + 3 + index + 2 + j as usize]);
+            j += 1;
         }
 
-        fns.push(SecCodeFn {
+        fns = vec_push(fns, SecCodeFn {
             body_size: fn_size,
             locals_count: fn_locals,
             code_ptr: (offset + 3 + index) as u8 + 2 + fn_locals,
@@ -272,10 +317,10 @@ fn read_section_code(buffer: &[u8], offset: usize) -> SecCode {
 fn wasm_read_sections(buffer: &[u8]) -> Sections {
     let mut pointer: usize = 8;
     let mut sec_size: u8 = 0;
-    let mut sec_type = SecType { type_id: 0, size: 0, items_count: 0, functions: Vec::new() };
-    let mut sec_fn = SecFunctions { type_id: 0, size: 0, items_count: 0, data: Vec::new() };
-    let mut sec_code = SecCode { type_id: 0, items_count: 0, size: 0, functions: Vec::new() };
-    let mut sec_import = SecImport { type_id: 0, size: 0, items_count: 0, items: Vec::new() };
+    let mut sec_type = SecType { type_id: 0, size: 0, items_count: 0, functions: vec_new() };
+    let mut sec_fn = SecFunctions { type_id: 0, size: 0, items_count: 0, data: vec_new() };
+    let mut sec_code = SecCode { type_id: 0, items_count: 0, size: 0, functions: vec_new() };
+    let mut sec_import = SecImport { type_id: 0, size: 0, items_count: 0, items: vec_new() };
     //let (secType): (SecType) = (SecType {});
 
     while pointer < buffer.len() {
@@ -293,7 +338,7 @@ fn wasm_read_sections(buffer: &[u8]) -> Sections {
             sec_import = read_section_import(buffer, pointer);
             sec_size = sec_import.size;
         } else {
-            //println!("End of sections!");
+            println!("End of sections!");
             break;
         }         
 
@@ -306,7 +351,7 @@ fn wasm_read_sections(buffer: &[u8]) -> Sections {
         sec_code: sec_code,
         sec_import: sec_import
     };
-    //println!("Sections: {:?}", sections);
+    println!("Sections: {:?}", sections);
     return sections;
     
 }
@@ -331,7 +376,7 @@ fn stack_pop(mut stack: VMStack) -> (i64, VMStack) {
     return (stack.stack[stack.length], stack);
 }
 
-fn vm_loop(buffer: &[u8], sections: &Sections, start_ptr: u8, params: Vec<i64>) -> i64 {
+fn vm_loop(buffer: &[u8], sections: &Sections, start_ptr: u8, params: VEC<i64>) -> i64 {
     let mut pointer = start_ptr as usize;
     let mut stack: VMStack = VMStack { 
         stack: [0; 1024],
@@ -343,33 +388,33 @@ fn vm_loop(buffer: &[u8], sections: &Sections, start_ptr: u8, params: Vec<i64>) 
         let param = buffer[pointer + 1];
 
         let stack_slice: &[i64] = &stack.stack[0..stack.length];
-        //println!("Cmd: {cmd}; Param: {param}; Stack: {:?}", stack_slice);
+        println!("Cmd: {cmd}; Param: {param}; Stack: {:?}", stack_slice);
 
         if cmd == INSTR_END {
-            //println!("End of function");
+            println!("End of function");
             break;
         } else if cmd == INSTR_I32_CONST {
             let value = leb_decode_unsigned(buffer, pointer + 1);  
             stack = stack_push(stack, value as i64);
             pointer += 2;
         } else if cmd == INSTR_LOCAL_GET {
-            stack = stack_push(stack, params[param as usize]);
+            stack = stack_push(stack, params.arr[param as usize].expect("local.get panics"));
             pointer += 2;
         } else if cmd == INSTR_I32_ADD {
             let (p1, st) = stack_pop(stack);
             let (p2, st) = stack_pop(st);
             stack = st;
-            //println!("Add: {p1} + {p2}");
+            println!("Add: {p1} + {p2}");
             stack = stack_push(stack, p1 + p2);
             pointer += 1;
         } else if cmd == INSTR_CALL {
             let (fn_data, code_index, import_index) = get_fn_from_sections(sections, param);
             let mut i = fn_data.params_cnt;
-            let mut params = Vec::new();
+            let mut params = vec_new();
             while i > 0 {
                 let (v, st) = stack_pop(stack);
                 stack = st;
-                params.push(v);
+                params = vec_push(params, v);
                 i -= 1;
             }
             let result = instr_call(buffer, sections, param, code_index, import_index, params);
@@ -390,18 +435,29 @@ fn vm_loop(buffer: &[u8], sections: &Sections, start_ptr: u8, params: Vec<i64>) 
 }
 
 fn get_fn_from_sections(sections: &Sections, fn_id: u8) -> (&SecTypeFunction, i16, i16) {
-    let mut types: Vec<&SecTypeFunction> = Vec::new();
+    let mut types: VEC<&SecTypeFunction> = vec_new();
+    let mut i = 0;
 
-    for i in &sections.sec_import.items {
-        types.push(&sections.sec_type.functions[i.signature_id as usize]);
+    while i < vec_len(&sections.sec_import.items) {
+        let ii = &sections.sec_import.items.arr[i as usize];
+        let sig_id = ii.as_ref().expect("import panics").signature_id;
+        let it = &sections.sec_type.functions.arr[sig_id as usize];
+        types = vec_push(types, &it.as_ref().expect("import types panics"));
+        i += 1;
     }
-    for i in &sections.sec_func.data {
-        types.push(&sections.sec_type.functions[*i as usize]);
+
+    i = 0;
+    while i < vec_len(&sections.sec_func.data) {
+        let fi = &sections.sec_func.data.arr[i as usize];
+        let fid = *fi.as_ref().expect("Types panics 3");
+        let nt = &sections.sec_type.functions.arr[fid as usize];
+        types = vec_push(types, nt.as_ref().expect("Types panics 4"));
+        i += 1;
     }
 
     let mut fn_code = -1;
     let mut fn_import = -1;
-    let fn_type = types[fn_id as usize];
+    let fn_type = types.arr[fn_id as usize].expect("fn_type panics");
 
     if fn_id >= sections.sec_import.items_count {
         fn_code = (fn_id - sections.sec_import.items_count) as i16;
@@ -412,49 +468,52 @@ fn get_fn_from_sections(sections: &Sections, fn_id: u8) -> (&SecTypeFunction, i1
     return (fn_type, fn_code, fn_import);
 }
 
-fn instr_call(buffer: &[u8], sections: &Sections, fn_id: u8, code_index: i16, import_index: i16, params: Vec<i64>) -> i64 {
-    //println!("Call function: {fn_id}; {:?}", params);        
+fn instr_call(buffer: &[u8], sections: &Sections, fn_id: u8, code_index: i16, import_index: i16, params: VEC<i64>) -> i64 {
+    println!("Call function: {fn_id}; {:?}", params);        
     
-    let mut all_params = Vec::new();
-    let mut i = params.len();
+    let mut all_params = vec_new();
+    let mut i = vec_len(&params);
     while i > 0 {
         i -= 1;
-        all_params.push(params[i]);
+        all_params = vec_push(all_params, params.arr[i as usize].expect("all_params panics"));
     }
 
     if code_index >= 0 {
-        let fn_code = &sections.sec_code.functions[code_index as usize];
-        for i in &fn_code.locals {
-            all_params.push(*i as i64);
-        }
+        let fn_code = &sections.sec_code.functions.arr[code_index as usize].as_ref().expect("fn_code panics");
+
+        i = 0;
+        while i < vec_len(&fn_code.locals) {
+            all_params = vec_push(all_params, fn_code.locals.arr[i as usize].expect("all_params panics 2") as i64);
+            i += 1;
+        }        
     
         return vm_loop(buffer, sections, fn_code.code_ptr, all_params);
     } else {
         // Call imported function
-        //println!("Call imported function: {import_index}");
+        println!("Call imported function: {import_index}");
         return call_imported(fn_id, all_params);
     }    
 }
 
-fn call_imported(fn_id: u8, params: Vec<i64>) -> i64{
+fn call_imported(fn_id: u8, params: VEC<i64>) -> i64{
     if fn_id == IMPORT_FN_LOG {
-        api_log(params[0]);
+        api_log(params.arr[0].expect("call_imported panics"));
         return 0;
     } else if fn_id == IMPORT_FN_GET_MEM {
-        return api_get_mem(params[0]) as i64;
+        return api_get_mem(params.arr[0].expect("call_imported panics 2")) as i64;
     } else if fn_id == IMPORT_FN_SET_MEM {
-        api_set_mem(params[0], params[1] as u8);
+        api_set_mem(params.arr[0].expect("call_imported panics 3"), params.arr[1].expect("call_imported panics 4") as u8);
         return 0;
     } else {
-        //println!("Couldn't find imported function: {fn_id}");
+        println!("Couldn't find imported function: {fn_id}");
         return 0;
     }
 }
 
 fn start_vm(buffer: &[u8], sections: &Sections) {
-    //println!("Start VM...");
-    let loop_result = vm_loop(buffer, sections, sections.sec_code.functions.as_slice()[0].code_ptr, Vec::new());
-    //println!("Start function returned: {loop_result}");
+    println!("Start VM...");
+    let loop_result = vm_loop(buffer, sections, sections.sec_code.functions.arr[0].as_ref().expect("Couldnt find first function").code_ptr, vec_new());
+    println!("Start function returned: {loop_result}");
 }
 
 /******************/

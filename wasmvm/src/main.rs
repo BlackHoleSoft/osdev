@@ -1,5 +1,3 @@
-use std::fs;
-
 // consts
 const INSTR_I32_CONST: u8 = 0x41;
 const INSTR_I32_ADD: u8 = 0x6a;
