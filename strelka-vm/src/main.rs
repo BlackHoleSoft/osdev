@@ -43,13 +43,13 @@ const IMPORT_FN_SET_MEM: u8 = 2;
 static mut MEMORY: [u8; 256] = [0; 256];
 
 
-#[derive(Debug)]
+//#[derive(Debug)]
 struct VEC<T> {
     arr: [Option<T>; 32],
     pointer: i32
 }
 
-#[derive(Debug)]
+//#[derive(Debug)]
 struct Sections {
     sec_type: SecType,
     sec_func: SecFunctions,
@@ -57,14 +57,14 @@ struct Sections {
     sec_import: SecImport
 }
 
-#[derive(Debug)]
+//#[derive(Debug)]
 struct SecImportItem {
     signature_id: u8,
     kind: u8,
     empty: bool,
 }
 
-#[derive(Debug)]
+//#[derive(Debug)]
 struct SecImport {
     type_id: u8,
     size: u8,
@@ -72,7 +72,7 @@ struct SecImport {
     items: VEC<SecImportItem>
 }
 
-#[derive(Debug)]
+//#[derive(Debug)]
 struct SecFunctions {
     type_id: u8,
     size: u8,
@@ -80,7 +80,7 @@ struct SecFunctions {
     data: VEC<u8>,
 }
 
-#[derive(Debug)]
+//#[derive(Debug)]
 struct SecTypeFunction {
     params_cnt: u8,
     result_cnt: u8,
@@ -88,7 +88,7 @@ struct SecTypeFunction {
     result_types: VEC<u8>,    
 }
 
-#[derive(Debug)]
+//#[derive(Debug)]
 struct SecType {
     type_id: u8,
     size: u8,
@@ -96,7 +96,7 @@ struct SecType {
     functions: VEC<SecTypeFunction>
 }
 
-#[derive(Debug)]
+//#[derive(Debug)]
 struct SecCodeFn {
     body_size: u8,
     locals_count: u8,
@@ -104,7 +104,7 @@ struct SecCodeFn {
     locals: VEC<u8>
 }
 
-#[derive(Debug)]
+//#[derive(Debug)]
 struct SecCode {
     type_id: u8,
     size: u8,
@@ -338,7 +338,7 @@ fn wasm_read_sections(buffer: &[u8]) -> Sections {
             sec_import = read_section_import(buffer, pointer);
             sec_size = sec_import.size;
         } else {
-            println!("End of sections!");
+            //println!("End of sections!");
             break;
         }         
 
@@ -351,7 +351,7 @@ fn wasm_read_sections(buffer: &[u8]) -> Sections {
         sec_code: sec_code,
         sec_import: sec_import
     };
-    println!("Sections: {:?}", sections);
+    //println!("Sections: {:?}", sections);
     return sections;
     
 }
@@ -388,10 +388,10 @@ fn vm_loop(buffer: &[u8], sections: &Sections, start_ptr: u8, params: VEC<i64>) 
         let param = buffer[pointer + 1];
 
         let stack_slice: &[i64] = &stack.stack[0..stack.length];
-        println!("Cmd: {cmd}; Param: {param}; Stack: {:?}", stack_slice);
+        //println!("Cmd: {cmd}; Param: {param}; Stack: {:?}", stack_slice);
 
         if cmd == INSTR_END {
-            println!("End of function");
+            //println!("End of function");
             break;
         } else if cmd == INSTR_I32_CONST {
             let value = leb_decode_unsigned(buffer, pointer + 1);  
@@ -404,7 +404,7 @@ fn vm_loop(buffer: &[u8], sections: &Sections, start_ptr: u8, params: VEC<i64>) 
             let (p1, st) = stack_pop(stack);
             let (p2, st) = stack_pop(st);
             stack = st;
-            println!("Add: {p1} + {p2}");
+            //println!("Add: {p1} + {p2}");
             stack = stack_push(stack, p1 + p2);
             pointer += 1;
         } else if cmd == INSTR_CALL {
@@ -469,7 +469,7 @@ fn get_fn_from_sections(sections: &Sections, fn_id: u8) -> (&SecTypeFunction, i1
 }
 
 fn instr_call(buffer: &[u8], sections: &Sections, fn_id: u8, code_index: i16, import_index: i16, params: VEC<i64>) -> i64 {
-    println!("Call function: {fn_id}; {:?}", params);        
+    //println!("Call function: {fn_id}; {:?}", params);        
     
     let mut all_params = vec_new();
     let mut i = vec_len(&params);
@@ -490,7 +490,7 @@ fn instr_call(buffer: &[u8], sections: &Sections, fn_id: u8, code_index: i16, im
         return vm_loop(buffer, sections, fn_code.code_ptr, all_params);
     } else {
         // Call imported function
-        println!("Call imported function: {import_index}");
+        //println!("Call imported function: {import_index}");
         return call_imported(fn_id, all_params);
     }    
 }
@@ -505,15 +505,15 @@ fn call_imported(fn_id: u8, params: VEC<i64>) -> i64{
         api_set_mem(params.arr[0].expect("call_imported panics 3"), params.arr[1].expect("call_imported panics 4") as u8);
         return 0;
     } else {
-        println!("Couldn't find imported function: {fn_id}");
+        //println!("Couldn't find imported function: {fn_id}");
         return 0;
     }
 }
 
 fn start_vm(buffer: &[u8], sections: &Sections) {
-    println!("Start VM...");
+    //println!("Start VM...");
     let loop_result = vm_loop(buffer, sections, sections.sec_code.functions.arr[0].as_ref().expect("Couldnt find first function").code_ptr, vec_new());
-    println!("Start function returned: {loop_result}");
+    //println!("Start function returned: {loop_result}");
 }
 
 /******************/
@@ -531,7 +531,7 @@ fn api_log(value: i64) {
 fn api_get_mem(addr: i64) -> u8 {
     let mem: *mut u8 = 0x0 as *mut u8;
     unsafe {
-        return *mem.offset(addr);
+        return *mem.offset(addr as isize);
     }
 }
 
@@ -539,7 +539,7 @@ fn api_set_mem(addr: i64, value: u8) {
     let mem = 0x0 as *mut u8;
 
     unsafe {
-        *mem.offset(addr) = value;
+        *mem.offset(addr as isize) = value;
     }
 }
 
@@ -578,12 +578,14 @@ pub extern "C" fn _start() -> ! {
     let buf_len = buffer.len();    
 
     if buf_len < 8 {
-        ////println!("Binary is empty or has no data!");
-        return;
+        //////println!("Binary is empty or has no data!");
+        loop {
+            
+        }
     }
 
     let version = wasm_get_version(buffer);
-    ////println!("Binary size: {buf_len}. WASM ver: {version}");
+    //////println!("Binary size: {buf_len}. WASM ver: {version}");
 
     let sections = wasm_read_sections(buffer);
     start_vm(buffer, &sections);
