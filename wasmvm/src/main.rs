@@ -1,4 +1,5 @@
 // consts
+
 const INSTR_I32_CONST: u8 = 0x41;
 const INSTR_I32_ADD: u8 = 0x6a;
 const INSTR_I32_SHL: u8 = 0x74;
@@ -563,6 +564,9 @@ fn api_set_mem(addr: i64, value: u8) {
     }*/   
     println!("SET MEMORY: {addr}; {value}"); 
 }
+
+
+
 
 fn main() {
     //tests_run();
