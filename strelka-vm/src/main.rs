@@ -617,7 +617,7 @@ fn debug(arr: [u8; 8]) {
     let vga_buf = 0xb8000 as *mut u8;
     for (i, &byte) in arr.iter().enumerate() {
         let digits = num_to_0x_chars(byte);
-        let color: u8 = 0x5 + i;
+        let color: u8 = 0x5 + i as u8;
 
         unsafe {
             *vga_buf.offset(i as isize * 4 + 0) = digits[0];
