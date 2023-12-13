@@ -393,7 +393,14 @@ fn vm_loop(buffer: &[u8], sections: &Sections, start_ptr: u8, params: VEC<i64>) 
 
         let stack_slice: &[i64] = &stack.stack[0..stack.length];
         println!("Cmd: {cmd}; Param: {param}; Stack: {:?}", stack_slice);
-        //debug(pointer, cmd, p, stack_slice[stack.length -], st2, st3, st4)
+        debug([
+            pointer as u8, 
+            cmd, param, 
+            if stack.length == 0 {0} else {(stack.stack[stack.length - 1] & 0xff) as u8},
+            if stack.length == 0 {0} else {((stack.stack[stack.length - 1] & 0xff00) >> 8) as u8},
+            if stack.length == 0 {0} else {((stack.stack[stack.length - 1] & 0xff0000) >> 16) as u8},
+            if stack.length == 0 {0} else {((stack.stack[stack.length - 1] & 0xff000000) >> 24) as u8},
+            0]);
 
         if cmd == INSTR_END {
             println!("End of function");
@@ -567,8 +574,8 @@ fn api_set_mem(addr: i64, value: u8) {
 }
 
 
-fn debug(pointer: i64, cmd: i64, p: u8, st1: i64, st2: i64, st3: i64, st4: i64) {
-    println!("Ptr: {pointer}; Cmd: {cmd}; P: {p}; st1: {st1}; st2: {st2}; st3: {st3}; st4: {st4}");
+fn debug(arr: [u8; 8]) {
+    println!("DEBUG: {:?}", arr);
 }
 
 

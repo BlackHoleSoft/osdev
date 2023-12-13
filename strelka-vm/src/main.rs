@@ -407,6 +407,14 @@ fn vm_loop(buffer: &[u8], sections: &Sections, start_ptr: u8, params: VEC<i64>) 
 
         let stack_slice: &[i64] = &stack.stack[0..stack.length];
         //println!("Cmd: {cmd}; Param: {param}; Stack: {:?}", stack_slice);
+        debug([
+            pointer as u8, 
+            cmd, param, 
+            if stack.length == 0 {0} else {(stack.stack[stack.length - 1] & 0xff) as u8},
+            if stack.length == 0 {0} else {((stack.stack[stack.length - 1] & 0xff00) >> 8) as u8},
+            if stack.length == 0 {0} else {((stack.stack[stack.length - 1] & 0xff0000) >> 16) as u8},
+            if stack.length == 0 {0} else {((stack.stack[stack.length - 1] & 0xff000000) >> 24) as u8},
+            0]);
 
         if cmd == INSTR_END {
             //println!("End of function");
@@ -591,6 +599,36 @@ fn api_wait(ticks: u64) {
 }
 
 
+fn digit_to_char_x16(digit: u8) -> u8 {
+    if digit < 10 {
+        return 0x30 + digit;
+    } else {
+        return 0x41 + digit - 10;
+    }
+}
+
+fn num_to_0x_chars(num: u8) -> [u8; 2] {
+    let v1 = num & 0xf;
+    let v2 = (num & 0xf0) >> 4;
+    return [digit_to_char_x16(v2), digit_to_char_x16(v1)];
+}
+
+fn debug(arr: [u8; 8]) {
+    let vga_buf = 0xb8000 as *mut u8;
+    for (i, &byte) in arr.iter().enumerate() {
+        let digits = num_to_0x_chars(byte);
+        let color: u8 = 0x5 + i;
+
+        unsafe {
+            *vga_buf.offset(i as isize * 4 + 0) = digits[0];
+            *vga_buf.offset(i as isize * 4 + 1) = color;
+            *vga_buf.offset(i as isize * 4 + 2) = digits[1];
+            *vga_buf.offset(i as isize * 4 + 3) = color;
+        }
+    }
+}
+
+
 /************************** END ***************************/
 
 
@@ -618,14 +656,14 @@ pub extern "C" fn _start() -> ! {
     let buf_len = buffer.len();    
 
     if buf_len < 8 {
-        ////////println!("Binary is empty or has no data!");
+        //////////println!("Binary is empty or has no data!");
         loop {
             
         }
     }
 
     let version = wasm_get_version(buffer);
-    ////////println!("Binary size: {buf_len}. WASM ver: {version}");
+    //////////println!("Binary size: {buf_len}. WASM ver: {version}");
 
     let sections = wasm_read_sections(buffer);
     start_vm(buffer, &sections);
