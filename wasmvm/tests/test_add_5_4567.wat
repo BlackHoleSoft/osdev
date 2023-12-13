@@ -1,0 +1,11 @@
+(module 
+ (export "_start" (func $_start))
+ (import "index" "log" (func $assembly/index/log (param i32)))
+ (import "index" "getMem" (func $assembly/index/getMem (param i32) (result i32)))
+ (import "index" "setMem" (func $assembly/index/setMem (param i32 i32))) 
+ (func $_start (result i32)
+   (i32.const 5)  
+   (i32.const 4567)
+   (i32.add)
+ )
+)
