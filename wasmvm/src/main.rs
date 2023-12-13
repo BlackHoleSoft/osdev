@@ -1,6 +1,7 @@
 // consts
 const INSTR_I32_CONST: u8 = 0x41;
 const INSTR_I32_ADD: u8 = 0x6a;
+const INSTR_I32_SHL: u8 = 0x74;
 const INSTR_END: u8 = 0x0b;
 const INSTR_LOCAL_GET: u8 = 0x20;
 const INSTR_LOCAL_SET: u8 = 0x21;
@@ -42,7 +43,8 @@ struct Sections {
     sec_type: SecType,
     sec_func: SecFunctions,
     sec_code: SecCode,
-    sec_import: SecImport
+    sec_import: SecImport,
+    sec_export: SecImport
 }
 
 #[derive(Debug)]
@@ -130,7 +132,7 @@ fn vec_get<T>(vec: &VEC<T>, index: usize) -> &Option<T> {
         return result;
 }
 
-fn leb_decode_unsigned(buffer: &[u8], pos: usize) -> u64 {
+fn leb_decode_unsigned(buffer: &[u8], pos: usize) -> (u64, usize) {
     let mut result: u64 = 0;
     let mut shift = 0;
     let mut pointer = pos;
@@ -143,7 +145,7 @@ fn leb_decode_unsigned(buffer: &[u8], pos: usize) -> u64 {
         shift += 7;
         pointer += 1;
     }
-    return result;
+    return (result, pointer - pos + 1);
 }
 
 fn leb_encode_unsigned(v: u64) -> (usize, [u8; 8]) {
@@ -216,7 +218,7 @@ fn read_section_type(buffer: &[u8], offset: usize) -> SecType {
     return result;
 }
 
-fn read_section_import(buffer: &[u8], offset: usize) -> SecImport {
+fn read_section_import(buffer: &[u8], offset: usize, single_name: bool) -> SecImport {
     let sec_size = buffer[offset + 1];
     let items_cnt = buffer[offset + 2];
     let mut items = vec_new();
@@ -224,10 +226,11 @@ fn read_section_import(buffer: &[u8], offset: usize) -> SecImport {
     let mut index = 0;
 
     while i < items_cnt {
-        let module_name_len = buffer[offset + 3 + index + 0];
-        let fn_name_len = buffer[offset + 3 + index + 1 + module_name_len as usize];
-        let fn_kind = buffer[offset + 3 + index + 2 + (module_name_len + fn_name_len) as usize];
-        let fn_id = buffer[offset + 3 + index + 3 + (module_name_len + fn_name_len) as usize];
+        let module_name_len = if single_name { 0 } else { buffer[offset + 3 + index + 0] };
+        let offs = if single_name {1} else {0};
+        let fn_name_len = buffer[offset + 3 + index + 1 + module_name_len as usize - offs];
+        let fn_kind = buffer[offset + 3 + index + 2 + (module_name_len + fn_name_len) as usize - offs];
+        let fn_id = buffer[offset + 3 + index + 3 + (module_name_len + fn_name_len) as usize - offs];
 
         items = vec_push(items, SecImportItem {
             kind: fn_kind,
@@ -309,6 +312,7 @@ fn wasm_read_sections(buffer: &[u8]) -> Sections {
     let mut sec_fn = SecFunctions { type_id: 0, size: 0, items_count: 0, data: vec_new() };
     let mut sec_code = SecCode { type_id: 0, items_count: 0, size: 0, functions: vec_new() };
     let mut sec_import = SecImport { type_id: 0, size: 0, items_count: 0, items: vec_new() };
+    let mut sec_export = SecImport { type_id: 0, size: 0, items_count: 0, items: vec_new() };
     //let (secType): (SecType) = (SecType {});
 
     while pointer < buffer.len() {
@@ -323,8 +327,11 @@ fn wasm_read_sections(buffer: &[u8]) -> Sections {
             sec_code = read_section_code(buffer, pointer);
             sec_size = sec_code.size;
         } else if section_id == SEC_IMPORT {
-            sec_import = read_section_import(buffer, pointer);
+            sec_import = read_section_import(buffer, pointer, false);
             sec_size = sec_import.size;
+        } else if section_id == SEC_EXPORT {
+            sec_export = read_section_import(buffer, pointer, true);
+            sec_size = sec_export.size;
         } else {
             println!("End of sections!");
             break;
@@ -337,7 +344,8 @@ fn wasm_read_sections(buffer: &[u8]) -> Sections {
         sec_type: sec_type,
         sec_func: sec_fn,
         sec_code: sec_code,
-        sec_import: sec_import
+        sec_import: sec_import,
+        sec_export: sec_export
     };
     println!("Sections: {:?}", sections);
     return sections;
@@ -389,9 +397,9 @@ fn vm_loop(buffer: &[u8], sections: &Sections, start_ptr: u8, params: VEC<i64>) 
             println!("End of function");
             break;
         } else if cmd == INSTR_I32_CONST {
-            let value = leb_decode_unsigned(buffer, pointer + 1);  
+            let (value, vsize) = leb_decode_unsigned(buffer, pointer + 1);  
             stack = stack_push(stack, value as i64);
-            pointer += 2;
+            pointer += 1 + vsize;
         } else if cmd == INSTR_LOCAL_GET {
             stack = stack_push(stack, locals[param as usize]);
             pointer += 2;
@@ -412,6 +420,13 @@ fn vm_loop(buffer: &[u8], sections: &Sections, start_ptr: u8, params: VEC<i64>) 
             stack = st;
             println!("Add: {p1} + {p2}");
             stack = stack_push(stack, p1 + p2);
+            pointer += 1;
+        } else if cmd == INSTR_I32_SHL {
+            let (p1, st) = stack_pop(stack);
+            let (p2, st) = stack_pop(st);
+            stack = st;
+            println!("Shl: {p1} << {p2}");
+            stack = stack_push(stack, p1 << p2);
             pointer += 1;
         } else if cmd == INSTR_CALL {
             let (fn_data, code_index, import_index) = get_fn_from_sections(sections, param);
@@ -518,7 +533,10 @@ fn call_imported(fn_id: u8, params: VEC<i64>) -> i64{
 
 fn start_vm(buffer: &[u8], sections: &Sections) {
     println!("Start VM...");
-    let loop_result = vm_loop(buffer, sections, sections.sec_code.functions.arr[0].as_ref().expect("Couldnt find first function").code_ptr, vec_new());
+    let start_fn_id = sections.sec_export.items.arr[0].as_ref().expect("Start fn index panics").signature_id;
+    println!("Start fn: {start_fn_id}");
+    let (fn_data, code_index, import_index) = get_fn_from_sections(sections, start_fn_id);
+    let loop_result = instr_call(buffer, sections, start_fn_id, code_index, import_index, vec_new());
     println!("Start function returned: {loop_result}");
 }
 
@@ -546,7 +564,7 @@ fn api_set_mem(addr: i64, value: u8) {
 }
 
 fn main() {
-    let buffer: &[u8] = &[0,97,115,109,1,0,0,0,1,10,2,96,0,1,127,96,1,127,1,127,3,3,2,0,1,10,23,2,7,0,65,137,6,16,1,11,13,1,1,127,65,1,33,1,32,0,32,1,106,11,0,20,4,110,97,109,101,1,6,1,1,3,105,110,99,2,5,2,0,0,1,0];
+    let buffer: &[u8] = &[0,97,115,109,1,0,0,0,1,19,4,96,1,127,0,96,1,127,1,127,96,2,127,127,0,96,0,1,127,2,43,3,5,105,110,100,101,120,3,108,111,103,0,0,5,105,110,100,101,120,6,103,101,116,77,101,109,0,1,5,105,110,100,101,120,6,115,101,116,77,101,109,0,2,3,2,1,3,7,10,1,6,95,115,116,97,114,116,0,3,10,7,1,5,0,65,200,0,11,0,93,4,110,97,109,101,1,75,4,0,18,97,115,115,101,109,98,108,121,47,105,110,100,101,120,47,108,111,103,1,21,97,115,115,101,109,98,108,121,47,105,110,100,101,120,47,103,101,116,77,101,109,2,21,97,115,115,101,109,98,108,121,47,105,110,100,101,120,47,115,101,116,77,101,109,3,6,95,115,116,97,114,116,2,9,4,0,0,1,0,2,0,3,0];
     let buf_len = buffer.len();
 
     /*println!("LEB128 read unsigned: {:?}", leb_encode_unsigned(leb_decode_unsigned(&[17, 3, 0, 6, 0, 0], 0)));

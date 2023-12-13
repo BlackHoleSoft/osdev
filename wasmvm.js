@@ -371,7 +371,7 @@ function runvm(buffer, imports = {}) {
 }
 
 function start() {
-    const module = "AGFzbQEAAAABCgJgAAF/YAF/AX8DAwIAAQoXAgcAQYkGEAELDQEBf0EBIQEgACABagsAFARuYW1lAQYBAQNpbmMCBQIAAAEA";
+    const module = "AGFzbQEAAAABEwRgAX8AYAF/AX9gAn9/AGAAAX8CKwMFaW5kZXgDbG9nAAAFaW5kZXgGZ2V0TWVtAAEFaW5kZXgGc2V0TWVtAAIDAgEDBwoBBl9zdGFydAADCgcBBQBByAALAF0EbmFtZQFLBAASYXNzZW1ibHkvaW5kZXgvbG9nARVhc3NlbWJseS9pbmRleC9nZXRNZW0CFWFzc2VtYmx5L2luZGV4L3NldE1lbQMGX3N0YXJ0AgkEAAABAAIAAwA=";
     const bin = getBinary(module);
 
     fs.writeFile("binArray.txt", JSON.stringify(bin), () => {});
