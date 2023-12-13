@@ -626,6 +626,8 @@ fn debug(arr: [u8; 8]) {
             *vga_buf.offset(i as isize * 4 + 3) = color;
         }
     }
+
+    api_wait(1000000000);
 }
 
 
