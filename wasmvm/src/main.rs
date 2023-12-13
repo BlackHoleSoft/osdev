@@ -3,6 +3,8 @@ const INSTR_I32_CONST: u8 = 0x41;
 const INSTR_I32_ADD: u8 = 0x6a;
 const INSTR_END: u8 = 0x0b;
 const INSTR_LOCAL_GET: u8 = 0x20;
+const INSTR_LOCAL_SET: u8 = 0x21;
+const INSTR_LOCAL_TEE: u8 = 0x22;
 const INSTR_FUNC: u8 = 0x60;
 const INSTR_CALL: u8 = 0x10;
 
@@ -368,6 +370,13 @@ fn vm_loop(buffer: &[u8], sections: &Sections, start_ptr: u8, params: VEC<i64>) 
         stack: [0; 1024],
         length: 0 
     };
+    let locals_count = vec_len(&params);
+    let mut locals: [i64; 64] = [0; 64];
+    let mut i: usize = 0;
+    while i < locals_count as usize {
+        locals[i] = params.arr[i].expect("Params panics");
+        i += 1;
+    }
 
     while pointer < buffer.len() {
         let cmd = buffer[pointer + 0];
@@ -384,7 +393,18 @@ fn vm_loop(buffer: &[u8], sections: &Sections, start_ptr: u8, params: VEC<i64>) 
             stack = stack_push(stack, value as i64);
             pointer += 2;
         } else if cmd == INSTR_LOCAL_GET {
-            stack = stack_push(stack, params.arr[param as usize].expect("local.get panics"));
+            stack = stack_push(stack, locals[param as usize]);
+            pointer += 2;
+        } else if cmd == INSTR_LOCAL_SET {
+            let (p, st) = stack_pop(stack);
+            stack = st;
+            locals[param as usize] = p;
+            pointer += 2;
+        } else if cmd == INSTR_LOCAL_TEE {
+            let (p, st) = stack_pop(stack);
+            stack = st;
+            locals[param as usize] = p;
+            stack = stack_push(stack, p);
             pointer += 2;
         } else if cmd == INSTR_I32_ADD {
             let (p1, st) = stack_pop(stack);
@@ -477,7 +497,7 @@ fn instr_call(buffer: &[u8], sections: &Sections, fn_id: u8, code_index: i16, im
     } else {
         // Call imported function
         println!("Call imported function: {import_index}");
-        return call_imported(fn_id, all_params);
+        return call_imported(fn_id, params);
     }    
 }
 
@@ -526,7 +546,7 @@ fn api_set_mem(addr: i64, value: u8) {
 }
 
 fn main() {
-    let buffer: &[u8] = &[0,97,115,109,1,0,0,0,1,19,4,96,1,127,0,96,1,127,1,127,96,2,127,127,0,96,0,1,127,2,43,3,5,105,110,100,101,120,3,108,111,103,0,0,5,105,110,100,101,120,6,103,101,116,77,101,109,0,1,5,105,110,100,101,120,6,115,101,116,77,101,109,0,2,3,2,1,3,10,22,1,20,0,65,128,128,46,65,3,16,2,65,129,128,46,65,12,16,2,65,0,11,0,85,4,110,97,109,101,1,67,3,0,18,97,115,115,101,109,98,108,121,47,105,110,100,101,120,47,108,111,103,1,21,97,115,115,101,109,98,108,121,47,105,110,100,101,120,47,103,101,116,77,101,109,2,21,97,115,115,101,109,98,108,121,47,105,110,100,101,120,47,115,101,116,77,101,109,2,9,4,0,0,1,0,2,0,3,0];
+    let buffer: &[u8] = &[0,97,115,109,1,0,0,0,1,10,2,96,0,1,127,96,1,127,1,127,3,3,2,0,1,10,23,2,7,0,65,137,6,16,1,11,13,1,1,127,65,1,33,1,32,0,32,1,106,11,0,20,4,110,97,109,101,1,6,1,1,3,105,110,99,2,5,2,0,0,1,0];
     let buf_len = buffer.len();
 
     /*println!("LEB128 read unsigned: {:?}", leb_encode_unsigned(leb_decode_unsigned(&[17, 3, 0, 6, 0, 0], 0)));
