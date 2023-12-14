@@ -1,3 +1,4 @@
+const LOG_LEVEL: u8 = 0;
 
 
 // consts
@@ -5,6 +6,11 @@
 const INSTR_I32_CONST: u8 = 0x41;
 const INSTR_I32_ADD: u8 = 0x6a;
 const INSTR_I32_SUB: u8 = 0x6b;
+const INSTR_I32_MUL: u8 = 0x6c;
+const INSTR_I32_DIV_S: u8 = 0x6d;
+const INSTR_I32_DIV_U: u8 = 0x6e;
+const INSTR_I32_REM_S: u8 = 0x6f;
+const INSTR_I32_REM_U: u8 = 0x70;
 const INSTR_I32_SHL: u8 = 0x74;
 const INSTR_END: u8 = 0x0b;
 const INSTR_LOCAL_GET: u8 = 0x20;
@@ -351,7 +357,7 @@ fn wasm_read_sections(buffer: &[u8]) -> Sections {
         sec_import: sec_import,
         sec_export: sec_export
     };
-    println!("Sections: {:?}", sections);
+    if LOG_LEVEL > 0 { println!("Sections: {:?}", sections); }
     return sections;
     
 }
@@ -439,6 +445,27 @@ fn vm_loop(buffer: &[u8], sections: &Sections, start_ptr: u8, params: VEC<i64>) 
             stack = st;
             println!("Sub: {p2} - {p1}");
             stack = stack_push(stack, p2 - p1);
+            pointer += 1;
+        } else if cmd == INSTR_I32_MUL {
+            let (p1, st) = stack_pop(stack);
+            let (p2, st) = stack_pop(st);
+            stack = st;
+            println!("Mul: {p1} * {p2}");
+            stack = stack_push(stack, p1 * p2);
+            pointer += 1;
+        } else if cmd == INSTR_I32_DIV_S || cmd == INSTR_I32_DIV_U {
+            let (p1, st) = stack_pop(stack);
+            let (p2, st) = stack_pop(st);
+            stack = st;
+            println!("Div: {p2} / {p1}");
+            stack = stack_push(stack, p2 / p1);
+            pointer += 1;
+        } else if cmd == INSTR_I32_REM_S || cmd == INSTR_I32_REM_U {
+            let (p1, st) = stack_pop(stack);
+            let (p2, st) = stack_pop(st);
+            stack = st;
+            println!("Rem: {p2} % {p1}");
+            stack = stack_push(stack, p2 % p1);
             pointer += 1;
         } else if cmd == INSTR_I32_SHL {
             let (p1, st) = stack_pop(stack);
@@ -585,7 +612,7 @@ fn api_set_mem(addr: i64, value: u8) {
 
 
 fn debug(arr: [u8; 8]) {
-    println!("DEBUG: {:?}", arr);
+    if LOG_LEVEL > 0 { println!("DEBUG: {:?}", arr); }
 }
 
 
@@ -600,7 +627,7 @@ fn main() {
     println!("LEB128 read unsigned: {:?}", leb_encode_unsigned(leb_decode_unsigned(&[0x80, 0x08, 0, 6, 0, 0], 0)));
     println!("LEB128 read unsigned: {:?}", leb_encode_unsigned(leb_decode_unsigned(&[0x81, 0xc7, 0x07, 6, 0, 0], 0)));*/
 
-    let mut test_vec: VEC<i32> = vec_new();
+    /*let mut test_vec: VEC<i32> = vec_new();
     println!("Vec created");
     test_vec = vec_push(test_vec, 777);
     test_vec = vec_push(test_vec, 666);
@@ -611,7 +638,7 @@ fn main() {
     println!("Vec item get: {disp_val}");
     let len = vec_len(&test_vec);
 
-    println!("Len: {len}");
+    println!("Len: {len}");*/
 
     if buf_len < 8 {
         println!("Binary is empty or has no data!");
@@ -653,6 +680,30 @@ fn test_sub_66_69() -> bool {
     return res == (66 - 69);
 }
 
+fn test_mul_66_69() -> bool {
+    let buffer: &[u8] = &[0,97,115,109,1,0,0,0,1,19,4,96,1,127,0,96,1,127,1,127,96,2,127,127,0,96,0,1,127,2,43,3,5,105,110,100,101,120,3,108,111,103,0,0,5,105,110,100,101,120,6,103,101,116,77,101,109,0,1,5,105,110,100,101,120,6,115,101,116,77,101,109,0,2,3,2,1,3,7,10,1,6,95,115,116,97,114,116,0,3,10,11,1,9,0,65,194,0,65,197,0,108,11,0,93,4,110,97,109,101,1,75,4,0,18,97,115,115,101,109,98,108,121,47,105,110,100,101,120,47,108,111,103,1,21,97,115,115,101,109,98,108,121,47,105,110,100,101,120,47,103,101,116,77,101,109,2,21,97,115,115,101,109,98,108,121,47,105,110,100,101,120,47,115,101,116,77,101,109,3,6,95,115,116,97,114,116,2,9,4,0,0,1,0,2,0,3,0];
+    let sections = wasm_read_sections(buffer);
+    let res = start_vm(buffer, &sections);
+
+    return res == (66 * 69);
+}
+
+fn test_div_100_4() -> bool {
+    let buffer: &[u8] = &[0,97,115,109,1,0,0,0,1,19,4,96,1,127,0,96,1,127,1,127,96,2,127,127,0,96,0,1,127,2,43,3,5,105,110,100,101,120,3,108,111,103,0,0,5,105,110,100,101,120,6,103,101,116,77,101,109,0,1,5,105,110,100,101,120,6,115,101,116,77,101,109,0,2,3,2,1,3,7,10,1,6,95,115,116,97,114,116,0,3,10,10,1,8,0,65,228,0,65,4,110,11,0,93,4,110,97,109,101,1,75,4,0,18,97,115,115,101,109,98,108,121,47,105,110,100,101,120,47,108,111,103,1,21,97,115,115,101,109,98,108,121,47,105,110,100,101,120,47,103,101,116,77,101,109,2,21,97,115,115,101,109,98,108,121,47,105,110,100,101,120,47,115,101,116,77,101,109,3,6,95,115,116,97,114,116,2,9,4,0,0,1,0,2,0,3,0];
+    let sections = wasm_read_sections(buffer);
+    let res = start_vm(buffer, &sections);
+
+    return res == (100 / 4);
+}
+
+fn test_rem_13_10() -> bool {
+    let buffer: &[u8] = &[0,97,115,109,1,0,0,0,1,19,4,96,1,127,0,96,1,127,1,127,96,2,127,127,0,96,0,1,127,2,43,3,5,105,110,100,101,120,3,108,111,103,0,0,5,105,110,100,101,120,6,103,101,116,77,101,109,0,1,5,105,110,100,101,120,6,115,101,116,77,101,109,0,2,3,2,1,3,7,10,1,6,95,115,116,97,114,116,0,3,10,9,1,7,0,65,13,65,10,112,11,0,93,4,110,97,109,101,1,75,4,0,18,97,115,115,101,109,98,108,121,47,105,110,100,101,120,47,108,111,103,1,21,97,115,115,101,109,98,108,121,47,105,110,100,101,120,47,103,101,116,77,101,109,2,21,97,115,115,101,109,98,108,121,47,105,110,100,101,120,47,115,101,116,77,101,109,3,6,95,115,116,97,114,116,2,9,4,0,0,1,0,2,0,3,0];
+    let sections = wasm_read_sections(buffer);
+    let res = start_vm(buffer, &sections);
+
+    return res == (13 % 10);
+}
+
 fn tests_run() {
     println!("RUN TESTS");
     println!("");
@@ -665,8 +716,21 @@ fn tests_run() {
     let test_sub_66_69_r = test_sub_66_69();
     println!("test_sub_66_69: {test_sub_66_69_r}");
 
+    let test_mul_66_69_r = test_mul_66_69();
+    println!("test_mul_66_69: {test_mul_66_69_r}");
+
+    let test_div_100_4_r = test_div_100_4();
+    println!("test_div_100_4: {test_div_100_4_r}");
+
+    let test_rem_13_10_r = test_rem_13_10();
+    println!("test_rem_13_10: {test_rem_13_10_r}");
+
     let all_ok = test_add_5_4567_r &&
-        test_sub_66_69_r;
+        test_sub_66_69_r &&
+        test_mul_66_69_r &&
+        test_div_100_4_r &&
+        test_rem_13_10_r;
+
     println!("Success: {all_ok}");
 
     println!("END TESTS");
