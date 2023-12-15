@@ -12,6 +12,8 @@ const INSTR_I32_DIV_U: u8 = 0x6e;
 const INSTR_I32_REM_S: u8 = 0x6f;
 const INSTR_I32_REM_U: u8 = 0x70;
 const INSTR_I32_SHL: u8 = 0x74;
+const INSTR_I32_EQZ: u8 = 0x45;
+const INSTR_I32_EQ: u8 = 0x46;
 const INSTR_END: u8 = 0x0b;
 const INSTR_LOCAL_GET: u8 = 0x20;
 const INSTR_LOCAL_SET: u8 = 0x21;
@@ -474,6 +476,19 @@ fn vm_loop(buffer: &[u8], sections: &Sections, start_ptr: u8, params: VEC<i64>) 
             println!("Shl: {p2} << {p1}");
             stack = stack_push(stack, p2 << p1);
             pointer += 1;
+        } else if cmd == INSTR_I32_EQZ {
+            let (p1, st) = stack_pop(stack);
+            stack = st;
+            println!("Eqz: {p1} == 0");
+            stack = stack_push(stack, if p1 == 0 {1} else {0});
+            pointer += 1;
+        } else if cmd == INSTR_I32_EQ {
+            let (p1, st) = stack_pop(stack);
+            let (p2, st) = stack_pop(st);
+            stack = st;
+            println!("Eq: {p2} == {p1}");
+            stack = stack_push(stack, if p2 == p1 {1} else {0});
+            pointer += 1;
         } else if cmd == INSTR_CALL {
             let (fn_data, code_index, import_index) = get_fn_from_sections(sections, param);
             let mut i = fn_data.params_cnt;
@@ -704,6 +719,14 @@ fn test_rem_13_10() -> bool {
     return res == (13 % 10);
 }
 
+fn test_eq_eqz() -> bool {
+    let buffer: &[u8] = &[0,97,115,109,1,0,0,0,1,19,4,96,1,127,0,96,1,127,1,127,96,2,127,127,0,96,0,1,127,2,43,3,5,105,110,100,101,120,3,108,111,103,0,0,5,105,110,100,101,120,6,103,101,116,77,101,109,0,1,5,105,110,100,101,120,6,115,101,116,77,101,109,0,2,3,2,1,3,7,10,1,6,95,115,116,97,114,116,0,3,10,10,1,8,0,65,13,65,10,70,69,11,0,93,4,110,97,109,101,1,75,4,0,18,97,115,115,101,109,98,108,121,47,105,110,100,101,120,47,108,111,103,1,21,97,115,115,101,109,98,108,121,47,105,110,100,101,120,47,103,101,116,77,101,109,2,21,97,115,115,101,109,98,108,121,47,105,110,100,101,120,47,115,101,116,77,101,109,3,6,95,115,116,97,114,116,2,9,4,0,0,1,0,2,0,3,0];
+    let sections = wasm_read_sections(buffer);
+    let res = start_vm(buffer, &sections);
+
+    return res == 1;
+}
+
 fn tests_run() {
     println!("RUN TESTS");
     println!("");
@@ -725,11 +748,15 @@ fn tests_run() {
     let test_rem_13_10_r = test_rem_13_10();
     println!("test_rem_13_10: {test_rem_13_10_r}");
 
+    let test_eq_eqz_r = test_eq_eqz();
+    println!("test_eq_eqz: {test_eq_eqz_r}");
+
     let all_ok = test_add_5_4567_r &&
         test_sub_66_69_r &&
         test_mul_66_69_r &&
         test_div_100_4_r &&
-        test_rem_13_10_r;
+        test_rem_13_10_r &&
+        test_eq_eqz_r;
 
     println!("Success: {all_ok}");
 
