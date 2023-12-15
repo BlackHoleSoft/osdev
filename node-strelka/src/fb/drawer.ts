@@ -38,9 +38,9 @@ export class Drawer {
         const fbArray = new Uint8Array(size * 4);
 
         for (let i = 0; i < size; i++) {
-            fbArray[i * 4 + 0] = data[i * 4 + 2];
-            fbArray[i * 4 + 1] = data[i * 4 + 1];
-            fbArray[i * 4 + 2] = data[i * 4 + 0];
+            fbArray[i * 4 + 0] = data[i * 3 + 2];
+            fbArray[i * 4 + 1] = data[i * 3 + 1];
+            fbArray[i * 4 + 2] = data[i * 3 + 0];
             fbArray[i * 4 + 3] = 0;
         }
 
