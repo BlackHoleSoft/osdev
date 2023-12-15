@@ -8,7 +8,7 @@ function main() {
     const fbDrawer = new Drawer(fbWidth, fbHeight);
 
     fbDrawer.clear('#ee67f5');
-    fbDrawer.text("S T R E L K A", fbWidth / 2 - 100, fbHeight / 2 - 20, 38, '#ffffff');
+    fbDrawer.text("S T R E L K A", 20, 100, 20, '#ffffff');
     
     const fb = fbDrawer.toBuffer();
     writeToFb(fb);
