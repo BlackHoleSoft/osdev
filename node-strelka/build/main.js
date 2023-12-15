@@ -1,26 +1,14 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
 //framebuffer example
-const fs_1 = __importDefault(require("fs"));
+Object.defineProperty(exports, "__esModule", { value: true });
+const drawer_1 = require("./fb/drawer");
+const framebuffer_1 = require("./fb/framebuffer");
 function main() {
-    const fb = fs_1.default.openSync('/dev/fb0', 'w+');
-    const resolution = fs_1.default.readFileSync('/sys/class/graphics/fb0/virtual_size');
-    if (!resolution) {
-        throw new Error('Can not determine fb resolution');
-    }
-    const [fbWidth, fbHeight] = resolution.toString().split(',').map(v => +v);
-    console.log('Resolution:', `${fbWidth}x${fbHeight}`);
-    const fbArr = new Uint8Array(fbWidth * fbHeight * 4);
-    for (let i = 0; i < fbWidth * fbHeight; i += 3) {
-        fbArr[i * 4 + 0] = 0; // blue
-        fbArr[i * 4 + 1] = 0; // green
-        fbArr[i * 4 + 2] = 255; // red
-        fbArr[i * 4 + 3] = 0;
-    }
-    const buffer = new DataView(new Uint8Array(fbArr).buffer);
-    fs_1.default.writeSync(fb, buffer, 0, buffer.byteLength, 0);
+    const [fbWidth, fbHeight] = (0, framebuffer_1.getFbResolution)();
+    const fbDrawer = new drawer_1.Drawer(fbWidth, fbHeight);
+    fbDrawer.clear('#ee67f5');
+    fbDrawer.text("S T R E L K A", fbWidth / 2 - 100, fbHeight / 2 - 20, 38, '#ffffff');
+    const fb = fbDrawer.toBuffer();
+    (0, framebuffer_1.writeToFb)(fb);
 }
 main();
