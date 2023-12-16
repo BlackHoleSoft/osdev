@@ -3,13 +3,13 @@
 import { StrelkaConfig } from "./config";
 import { Drawer } from "./fb/drawer";
 import { getFbResolution, writeToFb } from "./fb/framebuffer";
+import { KDMODE, setGraphicsMode } from "./ioctl";
 
 function main() {
     StrelkaConfig.loadConfig();
 
     if (StrelkaConfig.config?.graphicsMode) {
-        // npm linux-device
-        // iocltl(fb, KDSETMODE, 0x01);
+        setGraphicsMode(KDMODE.GRAPHICS);
     }
 
     const [fbWidth, fbHeight] = getFbResolution();
@@ -20,6 +20,12 @@ function main() {
     
     const fb = fbDrawer.toBuffer();
     writeToFb(fb);
+
+    setTimeout(() => {
+        if (StrelkaConfig.config?.graphicsMode) {
+            setGraphicsMode(KDMODE.TEXT);
+        }
+    }, 5000);
 }
 
 main();
