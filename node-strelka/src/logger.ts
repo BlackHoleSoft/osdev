@@ -4,6 +4,6 @@ export function log(logLevel: number, ...args: string[]) {
     }
 }
 
-export function log0(...args: string[]) {
+export function log0(...args: any[]) {
     log(0, ...args);
 }

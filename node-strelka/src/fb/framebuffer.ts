@@ -1,11 +1,11 @@
 import fs from 'fs';
 import { log0 } from '../logger';
-
-const FB_RESOLUTION_PATH = '/sys/class/graphics/fb0/virtual_size';
-const FB_DEV_PATH = '/dev/fb0';
+import { StrelkaConfig } from '../config';
 
 export function getFbResolution() {
-    const resolution = fs.readFileSync(FB_RESOLUTION_PATH);
+    const {fbResolutionFile} = StrelkaConfig.config!;
+
+    const resolution = fs.readFileSync(fbResolutionFile);
     if (!resolution) {
         throw new Error('Can not determine fb resolution');
     }
@@ -15,7 +15,8 @@ export function getFbResolution() {
 }
 
 export function writeToFb(buffer: Uint8Array) {
-    const fb = fs.openSync(FB_DEV_PATH, 'w+');    
+    const {fbDevice} = StrelkaConfig.config!;
+    const fb = fs.openSync(fbDevice, 'w+');
 
     const dv = new DataView(buffer.buffer);
     fs.writeSync(fb, dv, 0, dv.byteLength, 0);
