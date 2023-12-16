@@ -1,3 +1,7 @@
+// clone https://github.com/jerome-pouiller/ioctl
+// exclude some ioctls from sh script, which generates errors during compilation
+// run make && make install
+
 import {exec} from 'node:child_process';
 
 export enum KDMODE {
