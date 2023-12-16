@@ -12,8 +12,11 @@ export class StrelkaConfig {
     static config: StrelkaConfigType | null = null;
 
     static loadConfig() {
-        log0('Load config from:', './strelka.config.json');        
-        const conf = fs.readFileSync('./strelka.config.json');
+        const platform = process.platform || 'linux';
+        const strelkaConfig = platform === 'win32' ? './win.strelka.config.json' : './strelka.config.json';
+
+        log0('Load config from:', strelkaConfig);        
+        const conf = fs.readFileSync(strelkaConfig);
         if (!conf) {
             throw new Error("Coundn't find config file from path: ./strelka.config.json");
         }

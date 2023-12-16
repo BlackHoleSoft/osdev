@@ -585,7 +585,7 @@ eval("\n\nlet SyncReader = (module.exports = function (buffer) {\n  this._buffer
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
-eval("\nvar __importDefault = (this && this.__importDefault) || function (mod) {\n    return (mod && mod.__esModule) ? mod : { \"default\": mod };\n};\nObject.defineProperty(exports, \"__esModule\", ({ value: true }));\nexports.StrelkaConfig = void 0;\nconst fs_1 = __importDefault(__webpack_require__(/*! fs */ \"fs\"));\nconst logger_1 = __webpack_require__(/*! ./logger */ \"./src/logger.ts\");\nclass StrelkaConfig {\n    static loadConfig() {\n        (0, logger_1.log0)('Load config from:', './strelka.config.json');\n        const conf = fs_1.default.readFileSync('./strelka.config.json');\n        if (!conf) {\n            throw new Error(\"Coundn't find config file from path: ./strelka.config.json\");\n        }\n        StrelkaConfig.config = JSON.parse(conf.toString());\n        (0, logger_1.log0)(StrelkaConfig.config);\n    }\n}\nexports.StrelkaConfig = StrelkaConfig;\nStrelkaConfig.config = null;\n\n\n//# sourceURL=webpack://strelka/./src/config.ts?");
+eval("\nvar __importDefault = (this && this.__importDefault) || function (mod) {\n    return (mod && mod.__esModule) ? mod : { \"default\": mod };\n};\nObject.defineProperty(exports, \"__esModule\", ({ value: true }));\nexports.StrelkaConfig = void 0;\nconst fs_1 = __importDefault(__webpack_require__(/*! fs */ \"fs\"));\nconst logger_1 = __webpack_require__(/*! ./logger */ \"./src/logger.ts\");\nclass StrelkaConfig {\n    static loadConfig() {\n        const platform = process.platform || 'linux';\n        const strelkaConfig = platform === 'win32' ? './win.strelka.config.json' : './strelka.config.json';\n        (0, logger_1.log0)('Load config from:', strelkaConfig);\n        const conf = fs_1.default.readFileSync(strelkaConfig);\n        if (!conf) {\n            throw new Error(\"Coundn't find config file from path: ./strelka.config.json\");\n        }\n        StrelkaConfig.config = JSON.parse(conf.toString());\n        (0, logger_1.log0)(StrelkaConfig.config);\n    }\n}\nexports.StrelkaConfig = StrelkaConfig;\nStrelkaConfig.config = null;\n\n\n//# sourceURL=webpack://strelka/./src/config.ts?");
 
 /***/ }),
 
@@ -611,6 +611,17 @@ eval("\nvar __importDefault = (this && this.__importDefault) || function (mod) {
 
 /***/ }),
 
+/***/ "./src/ioctl.ts":
+/*!**********************!*\
+  !*** ./src/ioctl.ts ***!
+  \**********************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+"use strict";
+eval("\n// clone https://github.com/jerome-pouiller/ioctl\n// exclude some ioctls from sh script, which generates errors during compilation\n// run make && make install\nObject.defineProperty(exports, \"__esModule\", ({ value: true }));\nexports.setGraphicsMode = exports.KDMODE = void 0;\nconst node_child_process_1 = __webpack_require__(/*! node:child_process */ \"node:child_process\");\nvar KDMODE;\n(function (KDMODE) {\n    KDMODE[KDMODE[\"TEXT\"] = 0] = \"TEXT\";\n    KDMODE[KDMODE[\"GRAPHICS\"] = 1] = \"GRAPHICS\";\n})(KDMODE || (exports.KDMODE = KDMODE = {}));\nfunction setGraphicsMode(mode) {\n    (0, node_child_process_1.exec)(`ioctl /dev/console 0x4B3A\t-v ${mode}`);\n}\nexports.setGraphicsMode = setGraphicsMode;\n\n\n//# sourceURL=webpack://strelka/./src/ioctl.ts?");
+
+/***/ }),
+
 /***/ "./src/logger.ts":
 /*!***********************!*\
   !*** ./src/logger.ts ***!
@@ -629,7 +640,7 @@ eval("\nObject.defineProperty(exports, \"__esModule\", ({ value: true }));\nexpo
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 "use strict";
-eval("\n//framebuffer example\nObject.defineProperty(exports, \"__esModule\", ({ value: true }));\nconst config_1 = __webpack_require__(/*! ./config */ \"./src/config.ts\");\nconst drawer_1 = __webpack_require__(/*! ./fb/drawer */ \"./src/fb/drawer.ts\");\nconst framebuffer_1 = __webpack_require__(/*! ./fb/framebuffer */ \"./src/fb/framebuffer.ts\");\nfunction main() {\n    config_1.StrelkaConfig.loadConfig();\n    const [fbWidth, fbHeight] = (0, framebuffer_1.getFbResolution)();\n    const fbDrawer = new drawer_1.Drawer(fbWidth, fbHeight);\n    fbDrawer.clear('#aa67b5');\n    fbDrawer.text(\"S T R E L K A\", fbWidth / 2 - 110, fbHeight / 2 - 20, 40, '#ffffff');\n    const fb = fbDrawer.toBuffer();\n    (0, framebuffer_1.writeToFb)(fb);\n}\nmain();\n\n\n//# sourceURL=webpack://strelka/./src/main.ts?");
+eval("\n//framebuffer example\nObject.defineProperty(exports, \"__esModule\", ({ value: true }));\nconst config_1 = __webpack_require__(/*! ./config */ \"./src/config.ts\");\nconst drawer_1 = __webpack_require__(/*! ./fb/drawer */ \"./src/fb/drawer.ts\");\nconst framebuffer_1 = __webpack_require__(/*! ./fb/framebuffer */ \"./src/fb/framebuffer.ts\");\nconst ioctl_1 = __webpack_require__(/*! ./ioctl */ \"./src/ioctl.ts\");\nfunction main() {\n    var _a;\n    config_1.StrelkaConfig.loadConfig();\n    if ((_a = config_1.StrelkaConfig.config) === null || _a === void 0 ? void 0 : _a.graphicsMode) {\n        (0, ioctl_1.setGraphicsMode)(ioctl_1.KDMODE.GRAPHICS);\n    }\n    const [fbWidth, fbHeight] = (0, framebuffer_1.getFbResolution)();\n    const fbDrawer = new drawer_1.Drawer(fbWidth, fbHeight);\n    fbDrawer.clear('#aa67b5');\n    fbDrawer.text(\"S T R E L K A\", fbWidth / 2 - 110, fbHeight / 2 - 20, 40, '#ffffff');\n    const fb = fbDrawer.toBuffer();\n    (0, framebuffer_1.writeToFb)(fb);\n    setTimeout(() => {\n        var _a;\n        if ((_a = config_1.StrelkaConfig.config) === null || _a === void 0 ? void 0 : _a.graphicsMode) {\n            (0, ioctl_1.setGraphicsMode)(ioctl_1.KDMODE.TEXT);\n        }\n    }, 5000);\n}\nmain();\n\n\n//# sourceURL=webpack://strelka/./src/main.ts?");
 
 /***/ }),
 
@@ -663,6 +674,17 @@ module.exports = require("buffer");
 
 "use strict";
 module.exports = require("fs");
+
+/***/ }),
+
+/***/ "node:child_process":
+/*!*************************************!*\
+  !*** external "node:child_process" ***!
+  \*************************************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("node:child_process");
 
 /***/ }),
 
