@@ -1,4 +1,5 @@
 {
     "fbDevice": "/dev/fb0",
-    "fbResolutionFile": "/sys/class/graphics/fb0/virtual_size"
+    "fbResolutionFile": "/sys/class/graphics/fb0/virtual_size",
+    "graphicsMode": true
 }

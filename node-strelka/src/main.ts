@@ -7,6 +7,11 @@ import { getFbResolution, writeToFb } from "./fb/framebuffer";
 function main() {
     StrelkaConfig.loadConfig();
 
+    if (StrelkaConfig.config?.graphicsMode) {
+        // npm linux-device
+        // iocltl(fb, KDSETMODE, 0x01);
+    }
+
     const [fbWidth, fbHeight] = getFbResolution();
     const fbDrawer = new Drawer(fbWidth, fbHeight);
 
