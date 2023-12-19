@@ -28,6 +28,7 @@ chmod +x ./init
 
 echo '#!/bin/sh' > ./sbin/init
 echo 'node /strelka/strelka.js' >> ./sbin/init
+echo 'sh' >> ./sbin/init
 
 chmod +x ./sbin/init
 
