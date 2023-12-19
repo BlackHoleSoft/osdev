@@ -2,15 +2,18 @@
 # Run in alpine linux
 # Before running install node and npm (via nvs) and clone this repo to ~/osdev
 
+mkfs.ext4 /dev/sdb1
+mount /dev/sdb1 /mnt
+
 mkdir ~/rootfs
 cd ~/rootfs
 mkdir -p bin dev mnt proc sys tmp sbin lib
 
 echo '#!/bin/sh' > init
 #echo 'dmesg -n 1' >> init
-#echo 'mount -t devtmpfs none /dev' >> init
-#echo 'mount -t proc none /proc' >> init
-#echo 'mount -t sysfs none /sys' >> init
+echo 'mount -t devtmpfs none /dev' >> init
+echo 'mount -t proc none /proc' >> init
+echo 'mount -t sysfs none /sys' >> init
 echo 'mknod /dev/console c 5 1' >> init
 echo 'mknod /dev/null c 1 3' >> init
 echo 'echo "Running /sbin/init"' >> init
@@ -24,9 +27,14 @@ echo 'node /test.js' >> ./sbin/init
 
 chmod +x ./sbin/init
 
-echo 'console.log("Test script running...")' > ./test.js
+echo 'console.log("Test script running..."); while (true) {}' > ./test.js
 
 cp /bin/sh ./bin
+cp /bin/ls ./bin
+cp /bin/mount ./bin
+cp /bin/mknod ./bin
+cp /bin/mkdir ./bin
+cp /bin/echo ./bin
 cp /usr/bin/node ./bin
 
 echo 'Copying libs...'
