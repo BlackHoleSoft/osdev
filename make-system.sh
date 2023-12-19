@@ -27,7 +27,8 @@ echo 'echo "INTERNAL ERROR!!! Cannot run /sbin/init."' >> init
 chmod +x ./init
 
 echo '#!/bin/sh' > ./sbin/init
-echo 'node /strelka/strelka.js' >> ./sbin/init
+echo 'cd /strelka' >> ./sbin/init
+echo 'node ./strelka.js' >> ./sbin/init
 echo 'sh' >> ./sbin/init
 
 chmod +x ./sbin/init
@@ -36,6 +37,7 @@ echo 'console.log("Test script running..."); while (true) {}' > ./test.js
 
 cp /bin/sh ./bin
 cp /bin/ls ./bin
+cp /bin/cd ./bin
 cp /bin/mount ./bin
 cp /bin/mknod ./bin
 cp /bin/mkdir ./bin
