@@ -72,4 +72,8 @@ export class Drawer {
     get context() {
         return this.ctx;
     }
+
+    get resolution() {
+        return [this.width, this.height];
+    }
 }
