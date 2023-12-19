@@ -36,10 +36,11 @@ chmod +x ./sbin/init
 
 echo 'console.log("Test script running..."); while (true) {}' > ./test.js
 
-mkdir -p /sys/class/graphics/fb0
-echo '720,400' > /sys/class/graphics/fb0/virtual_size
+mkdir -p ./sys/class/graphics/fb0
+echo '720,400' > ./sys/class/graphics/fb0/virtual_size
 
 cp /bin/sh ./bin
+cp /bin/busybox ./bin
 cp /bin/ls ./bin
 cp /bin/cd ./bin
 cp /bin/mount ./bin
