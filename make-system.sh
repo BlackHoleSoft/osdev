@@ -20,6 +20,7 @@ echo 'mount -t proc none /proc' >> init
 echo 'mount -t sysfs none /sys' >> init
 echo 'mknod /dev/console c 5 1' >> init
 echo 'mknod /dev/null c 1 3' >> init
+echo 'mknod /dev/fb0 c 29 0' >> init
 echo 'echo "Running /sbin/init"' >> init
 echo 'exec /sbin/init' >> init
 echo 'echo "INTERNAL ERROR!!! Cannot run /sbin/init."' >> init
@@ -34,6 +35,9 @@ echo 'sh' >> ./sbin/init
 chmod +x ./sbin/init
 
 echo 'console.log("Test script running..."); while (true) {}' > ./test.js
+
+mkdir -p /sys/class/graphics/fb0
+echo '720,400' > /sys/class/graphics/fb0/virtual_size
 
 cp /bin/sh ./bin
 cp /bin/ls ./bin
