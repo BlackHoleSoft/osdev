@@ -2,6 +2,10 @@
 # Run in alpine linux
 # Before running install node and npm (via nvs) and clone this repo to ~/osdev
 
+cd ./node-strelka
+npm install
+npm run build
+
 mkfs.ext4 /dev/sdb1
 mount /dev/sdb1 /mnt
 
@@ -23,7 +27,7 @@ echo 'echo "INTERNAL ERROR!!! Cannot run /sbin/init."' >> init
 chmod +x ./init
 
 echo '#!/bin/sh' > ./sbin/init
-echo 'node /test.js' >> ./sbin/init
+echo 'node /strelka/strelka.js' >> ./sbin/init
 
 chmod +x ./sbin/init
 
@@ -41,6 +45,8 @@ echo 'Copying libs...'
 #cp /lib/ld-musl-x86_64.so.1 ./lib
 #cp /lib/libc.musl-x86_64.so.1 ./lib
 ldd /usr/bin/node | grep "=> /" | awk '{print $3}' | xargs -I '{}' cp -v '{}' ./lib
+
+cp -r ~/osdev/node-strelka/dist ./strelka
 
 find . | cpio -R root:root -H newc -o | gzip > ~/rootfs.gz
 

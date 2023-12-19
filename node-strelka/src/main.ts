@@ -59,6 +59,10 @@ function main() {
     //         setGraphicsMode(KDMODE.TEXT);
     //     }
     // }, 5000);
+
+    while (true) {
+        // final loop
+    }
 }
 
 main();
