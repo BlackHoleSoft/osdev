@@ -15,9 +15,9 @@ mkdir -p bin dev mnt proc sys tmp sbin lib
 
 echo '#!/bin/sh' > init
 #echo 'dmesg -n 1' >> init
-echo 'mount -t devtmpfs none /dev' >> init
-echo 'mount -t proc none /proc' >> init
-echo 'mount -t sysfs none /sys' >> init
+#echo 'mount -t devtmpfs none /dev' >> init
+#echo 'mount -t proc none /proc' >> init
+#echo 'mount -t sysfs none /sys' >> init
 echo 'mknod /dev/console c 5 1' >> init
 echo 'mknod /dev/null c 1 3' >> init
 echo 'mknod /dev/fb0 c 29 0' >> init
