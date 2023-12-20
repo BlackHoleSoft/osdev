@@ -42,7 +42,10 @@ echo '720,400' > ./sys/class/graphics/fb0/virtual_size
 cp /bin/sh ./bin
 cp /bin/busybox ./bin
 cp /bin/ls ./bin
-cp /bin/cd ./bin
+cp /bin/lsmod ./bin
+cp /sbin/modinfo ./bin
+cp /sbin/modprobe ./bin
+cp /usr/sbin/fbset ./bin
 cp /bin/mount ./bin
 cp /bin/mknod ./bin
 cp /bin/mkdir ./bin
@@ -52,6 +55,7 @@ cp /usr/bin/node ./bin
 echo 'Copying libs...'
 #cp /lib/ld-musl-x86_64.so.1 ./lib
 #cp /lib/libc.musl-x86_64.so.1 ./lib
+ldd /sbin/modprobe | grep "=> /" | awk '{print $3}' | xargs -I '{}' cp -v '{}' ./lib
 ldd /usr/bin/node | grep "=> /" | awk '{print $3}' | xargs -I '{}' cp -v '{}' ./lib
 
 cp -r ~/osdev/node-strelka/dist ./strelka
