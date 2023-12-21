@@ -19,15 +19,15 @@ mount /dev/sdb1 /mnt/system
 
 mkdir ~/rootfs
 
-cd /mnt/src/busybox
-make defconfig
-LDFLAGS="--static" make busybox install
-cd _install
-cp -r ./ ~/rootfs/
+#cd /mnt/src/busybox
+#make defconfig
+#LDFLAGS="--static" make busybox install
+#cd _install
+#cp -r ./ ~/rootfs/
 
 cd ~/rootfs
-rm -f linuxrc
-mkdir -p bin dev mnt proc sys tmp sbin lib
+#rm -f linuxrc
+mkdir -p bin dev mnt proc sys tmp sbin lib etc
 
 echo '#!/bin/sh' > init
 #echo 'dmesg -n 1' >> init
@@ -62,11 +62,14 @@ cp /bin/lsmod ./bin
 cp /sbin/modinfo ./bin
 cp /sbin/modprobe ./bin
 cp /usr/sbin/fbset ./bin
+cp /sbin/v86d ./bin
 cp /bin/mount ./bin
 cp /bin/mknod ./bin
 cp /bin/mkdir ./bin
 cp /bin/echo ./bin
 cp /usr/bin/node ./bin
+
+cp /etc/modprobe.d/uvesafb ./etc/modprobe.d/uvesafb.conf
 
 echo 'Copying libs...'
 #cp /lib/ld-musl-x86_64.so.1 ./lib
@@ -78,14 +81,14 @@ cp -r ~/osdev/node-strelka/dist ./strelka
 
 find . | cpio -R root:root -H newc -o | gzip > ~/rootfs.gz
 
-cd /mnt
+cd /mnt/system
 mkdir boot
 cd boot
 
 cp ~/rootfs.gz .
 cp /boot/vmlinuz-lts .
 
-grub-install --boot-directory=/mnt/boot /dev/sdb
+grub-install --boot-directory=/mnt/system/boot /dev/sdb
 
 # set gfxpayload=1024x768x16
 echo 'set timeout=10' > grub/grub.cfg
