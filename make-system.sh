@@ -91,11 +91,11 @@ cp /mnt/src/bzImage .
 
 grub-install --boot-directory=/mnt/system/boot /dev/sdb
 
-# set gfxpayload=1024x768x16
 echo 'set timeout=10' > grub/grub.cfg
 echo 'menuentry "Strelka (node based)" {' >> grub/grub.cfg
+echo '  set gfxpayload=1024x768x32' >> grub/grub.cfg
 #echo '  linux /boot/vmlinuz-lts root=/dev/sda1 rw' >> grub/grub.cfg
-echo '  linux /boot/bzImage root=/dev/sda1 rw' >> grub/grub.cfg
+echo '  linux /boot/bzImage root=/dev/sda1 rw noapic' >> grub/grub.cfg
 echo '  initrd /boot/rootfs.gz' >> grub/grub.cfg
 echo '}' >> grub/grub.cfg
 
