@@ -1,7 +1,7 @@
 #!/bin/sh
 # Run in alpine linux
 # Before running install node and npm (via nvs) and clone this repo to ~/osdev
-# Place busybox src into /mnt/src/busybox
+# Place kernel into /mnt/src/bzImage
 
 #wget -nc -O kernel.tar.xz http://kernel.org/pub/linux/kernel/v5.x/linux-${KERNEL_VERSION}.tar.xz
 #wget -nc -O busybox.tar.bz2 http://busybox.net/downloads/busybox-${BUSYBOX_VERSION}.tar.bz2
@@ -62,14 +62,14 @@ cp /bin/lsmod ./bin
 cp /sbin/modinfo ./bin
 cp /sbin/modprobe ./bin
 cp /usr/sbin/fbset ./bin
-cp /sbin/v86d ./bin
+#cp /sbin/v86d ./bin
 cp /bin/mount ./bin
 cp /bin/mknod ./bin
 cp /bin/mkdir ./bin
 cp /bin/echo ./bin
 cp /usr/bin/node ./bin
 
-cp /etc/modprobe.d/uvesafb ./etc/modprobe.d/uvesafb.conf
+#cp /etc/modprobe.d/uvesafb ./etc/modprobe.d/uvesafb.conf
 
 echo 'Copying libs...'
 #cp /lib/ld-musl-x86_64.so.1 ./lib
@@ -86,14 +86,16 @@ mkdir boot
 cd boot
 
 cp ~/rootfs.gz .
-cp /boot/vmlinuz-lts .
+#cp /boot/vmlinuz-lts .
+cp /mnt/src/bzImage .
 
 grub-install --boot-directory=/mnt/system/boot /dev/sdb
 
 # set gfxpayload=1024x768x16
 echo 'set timeout=10' > grub/grub.cfg
 echo 'menuentry "Strelka (node based)" {' >> grub/grub.cfg
-echo '  linux /boot/vmlinuz-lts root=/dev/sda1 rw' >> grub/grub.cfg
+#echo '  linux /boot/vmlinuz-lts root=/dev/sda1 rw' >> grub/grub.cfg
+echo '  linux /boot/bzImage root=/dev/sda1 rw' >> grub/grub.cfg
 echo '  initrd /boot/rootfs.gz' >> grub/grub.cfg
 echo '}' >> grub/grub.cfg
 
