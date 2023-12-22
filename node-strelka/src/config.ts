@@ -6,6 +6,7 @@ export type StrelkaConfigType = {
     fbResolutionFile: string;
     drawerDebug?: boolean;
     graphicsMode?: boolean;
+    fbResolution?: string;
 }
 
 export class StrelkaConfig {

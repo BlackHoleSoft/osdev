@@ -3,9 +3,9 @@ import { log0 } from '../logger';
 import { StrelkaConfig } from '../config';
 
 export function getFbResolution() {
-    const {fbResolutionFile} = StrelkaConfig.config!;
+    const {fbResolutionFile, fbResolution} = StrelkaConfig.config!;
 
-    const resolution = fs.readFileSync(fbResolutionFile);
+    const resolution = fbResolution || fs.readFileSync(fbResolutionFile);
     if (!resolution) {
         throw new Error('Can not determine fb resolution');
     }

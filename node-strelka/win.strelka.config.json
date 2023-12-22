@@ -1,5 +1,6 @@
 {
     "fbDevice": "fb0.txt",
     "fbResolutionFile": "fb0_virtual_size.txt",
+    "fbResolution": "600,400",
     "drawerDebug": true
 }
