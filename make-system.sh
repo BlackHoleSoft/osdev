@@ -62,6 +62,7 @@ cp /bin/lsmod ./bin
 cp /sbin/modinfo ./bin
 cp /sbin/modprobe ./bin
 cp /usr/sbin/fbset ./bin
+cp /usr/bin/nano ./bin
 #cp /sbin/v86d ./bin
 cp /bin/mount ./bin
 cp /bin/mknod ./bin

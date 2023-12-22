@@ -54,11 +54,11 @@ function main() {
     // const fb = fbDrawer.toBuffer();
     // writeToFb(fb);
 
-    // setTimeout(() => {
-    //     if (StrelkaConfig.config?.graphicsMode) {
-    //         setGraphicsMode(KDMODE.TEXT);
-    //     }
-    // }, 5000);
+    setTimeout(() => {
+        if (StrelkaConfig.config?.graphicsMode) {
+            setGraphicsMode(KDMODE.TEXT);
+        }
+    }, 5000);
 
     // while (true) {
     //     // final loop
