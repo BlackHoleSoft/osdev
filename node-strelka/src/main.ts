@@ -55,6 +55,7 @@ function main() {
     // writeToFb(fb);
 
     setTimeout(() => {
+        log0('Exit...');
         if (StrelkaConfig.config?.graphicsMode) {
             setGraphicsMode(KDMODE.TEXT);
         }
