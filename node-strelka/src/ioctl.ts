@@ -3,6 +3,7 @@
 // run make && make install
 
 import {exec} from 'node:child_process';
+import { log0 } from './logger';
 
 export enum KDMODE {
     TEXT = 0,
@@ -10,5 +11,6 @@ export enum KDMODE {
 }
 
 export function setGraphicsMode(mode: KDMODE) {
+    log0("Switch graphics mode:", mode);
     exec(`ioctl /dev/console 0x4B3A	-v ${mode}`);
 }

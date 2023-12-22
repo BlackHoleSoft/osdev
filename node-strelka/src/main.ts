@@ -25,17 +25,17 @@ function main() {
 
         const [mode, setMode] = state(KDMODE.GRAPHICS);
 
-        use(() => {
-            if (StrelkaConfig.config?.graphicsMode) {
-                setGraphicsMode(mode);
-            } else {
-                log0('Switch graphics mode to:', mode);
-            }
-        }, [mode]);
+        // use(() => {
+        //     if (StrelkaConfig.config?.graphicsMode) {
+        //         setGraphicsMode(mode);
+        //     } else {
+        //         log0('Switch graphics mode to:', mode);
+        //     }
+        // }, [mode]);
 
-        use(() => {
-            setTimeout(() => setMode(KDMODE.TEXT), 5000);
-        }, []);
+        // use(() => {
+        //     setTimeout(() => setMode(KDMODE.TEXT), 5000);
+        // }, []);
 
         return () => {
             if (mode === 0x1) {
@@ -54,11 +54,11 @@ function main() {
     // const fb = fbDrawer.toBuffer();
     // writeToFb(fb);
 
-    setTimeout(() => {
-        if (StrelkaConfig.config?.graphicsMode) {
-            setGraphicsMode(KDMODE.TEXT);
-        }
-    }, 5000);
+    // setTimeout(() => {
+    //     if (StrelkaConfig.config?.graphicsMode) {
+    //         setGraphicsMode(KDMODE.TEXT);
+    //     }
+    // }, 5000);
 
     // while (true) {
     //     // final loop
