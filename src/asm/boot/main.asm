@@ -1,4 +1,7 @@
 global start
+extern kmain
+
+; TODO: init stack !!!
 
 section .text
 bits 32
@@ -23,5 +26,17 @@ prnt_loop_2:
 	add eax, 4
 	cmp eax, 0xb8044
 	jne prnt_loop_2
+
+load_kernel:
+
+	; load null into all data segment registers
+    ;mov ax, 0
+    ;mov ss, ax
+    ;mov ds, ax
+    ;mov es, ax
+    ;mov fs, ax
+    ;mov gs, ax
+
+	call kmain
 	
 	hlt
