@@ -1,20 +1,17 @@
 # osdev
 
-Сборка базовой системы с кастомным initrd
 
-1. Отформатировать диск (mkfs.ext4 /dev/sdb1)
-2. Примонтировать и создать каталог boot
-3. Скопировать ядро (alpine linux)
-4. Создать каталог в другом месте для создания rootfs
-5. В этом каталоге создать базовые директории, добавить скрипт init
-6. Скопировать нужные библотеки (можно посмотреть через ldd) и /sbin/init, который будет вызываться в скрипте
-7. Собрать образ rootfs
+## Build
 
-cd $ROOTFS
-find . | cpio -R root:root -H newc -o | gzip > $SOURCE_DIR/iso/boot/rootfs.gz
+Build docker image:
+ - `docker build buildenv -t sys-c`
 
-8. Установить GRUB
+Enter build environment:
+ - Linux: `docker run --rm -it -v "$(pwd)":/root/env sys-c`
+ - Windows: `docker run --rm -it -v "%cd%":/root/env sys-c`
+ - Windows (PowerShell): `docker run --rm -it -v "${pwd}:/root/env" sys-c`
 
+Build for x86:
+ - `make build`
 
-# пример init
-/init.sh
+To leave the build environment, enter `exit`.
