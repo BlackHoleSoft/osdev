@@ -1,11 +1,17 @@
 global start
 extern kmain
 
-; TODO: init stack !!!
+section .bss
+align 4096
+; init stack
+stack_bottom:
+	resb 4096 * 4
+stack_top:
 
 section .text
 bits 32
 start:
+	mov esp, stack_top
 
 	mov eax, 0xb8000
 
