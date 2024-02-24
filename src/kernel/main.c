@@ -1,8 +1,19 @@
 #include "std/print.h"
 #include "std/io.h"
+#include "std/keyboard.h"
 
 #define SCREEN_WIDTH 80
 #define SCREEN_HEIGHT 25
+
+struct MemGlobal {
+    u8 kbd_keycode;
+    u32 reserved;
+};
+
+struct StateGlobal {
+    char symbol;
+    bool initialized;
+};
 
 char try_mem(ulong addr) {
     char* ptr = (char*) addr;
@@ -18,39 +29,61 @@ void test_mem_in_vm() {
     }
 }
 
-void kbd_ack(void){
-  while(!(inb(0x60)==0xfa));
+void user_loop(struct MemGlobal* mem, struct StateGlobal* state, struct StateGlobal* prev) {
+
+    // logic    
+
+    if (state->initialized == false) {
+        state->symbol = kbd_symbol(mem->kbd_keycode);
+
+        if (prev->symbol != state->symbol) {
+            state->initialized = true;
+        }
+    }    
+
+    //render
+
+    if (state->initialized == false) {
+        print(SCREEN_WIDTH * 6, "Enter:");
+    } else {        
+        //print(SCREEN_WIDTH * 6, "Symbol:");
+        print(SCREEN_WIDTH * 6 + 9, char_to_str(state->symbol));
+    }
+}
+
+void sys_loop(struct MemGlobal* mem) {
+    mem->kbd_keycode = kbd_keycode();
 }
 
 void kmain() {
     print(SCREEN_WIDTH * 1, "Strelka System");
-    print(SCREEN_WIDTH * 2, num_to_str(0xdead666, 16));
-    print(SCREEN_WIDTH * 3, num_to_str(666777, 10));
-    print(SCREEN_WIDTH * 4, num_to_str(7, 2));
 
-    outb(0x60, 0xed);
-    kbd_ack();
-    outb(0x60, 0x1);
-    outb(0x60, 0x1);
+    kbd_leds(0x3);
 
     for (int i=0; i<999999999; i++) {}
 
-    outb(0x60, 0xed);
-    kbd_ack();
-    outb(0x60, 0x3);
-    outb(0x60, 0x3);
+    kbd_leds(0x0);
 
-    for (int i=0; i<999999999; i++) {}
-    outb(0x60, 0xed);
-    kbd_ack();
-    outb(0x60, 0x0);
-    outb(0x60, 0x0);
+    struct MemGlobal mem_global;
+    struct StateGlobal state_global;
+    struct StateGlobal state_global_prev;
 
-    print(SCREEN_WIDTH * 6, "outb");
+    state_global.symbol = 0;
+    state_global.initialized = false;
+
+    state_global_prev.symbol = 0;
+    state_global_prev.initialized = false;
 
     while (1) {
-        char k = inb(0x60);
-        print(SCREEN_WIDTH * 7, num_to_str(k, 16));
+        sys_loop(&mem_global);
+        user_loop(&mem_global, &state_global, &state_global_prev);
+
+        state_global_prev.symbol = state_global.symbol;
+        state_global_prev.initialized = state_global.initialized;
+
+        u8 kc = mem_global.kbd_keycode;
+        print(SCREEN_WIDTH * 12, num_to_str(kc, 16));
+        print(SCREEN_WIDTH * 13, char_to_str(kbd_symbol(kc)));
     }
 
     // test_mem_in_vm();

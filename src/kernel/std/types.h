@@ -4,3 +4,7 @@
 #define u16 unsigned short
 #define u8 unsigned char
 #define string char*
+
+#define bool unsigned char
+#define true 1
+#define false 0

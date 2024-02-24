@@ -1,4 +1,13 @@
 #include "types.h"
+#include "print.h"
+
+void clear() {
+    char* vid = (char*)0xb8000;
+
+    for (int i = 0; i < SCREEN_WIDTH * SCREEN_HEIGHT * 2; i++) {
+        vid[i * 2 + 0] = 0;
+    }
+}
 
 int str_len(string str) {
     int len;
@@ -31,4 +40,10 @@ string num_to_str(int num, int r) {
     }
     str[end] = '\0';
     return (string)((ulong)str + (end - i));
+}
+
+string char_to_str(char c) {
+    string str = " ";
+    str[0] = c;
+    return str;
 }
