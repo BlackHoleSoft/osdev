@@ -5,6 +5,8 @@
 #define u8 unsigned char
 #define string char*
 
+#define NULL (void*)0
+
 #define bool unsigned char
 #define true 1
 #define false 0

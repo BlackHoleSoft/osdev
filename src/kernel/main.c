@@ -1,6 +1,7 @@
 #include "std/print.h"
 #include "std/io.h"
 #include "std/keyboard.h"
+#include "std/mem.h"
 
 #define SCREEN_WIDTH 80
 #define SCREEN_HEIGHT 25
@@ -14,20 +15,6 @@ struct StateGlobal {
     char symbol;
     bool initialized;
 };
-
-char try_mem(ulong addr) {
-    char* ptr = (char*) addr;
-    return ptr[0];
-}
-
-void test_mem_in_vm() {
-    for (int i = 0; i <= 1024; i += 64) {
-        char c = try_mem(0x100000 * i);
-        char cstr[] = {c, '\0'};
-        print(SCREEN_WIDTH * 2 + i / 16, num_to_str(i, 10));
-        print(SCREEN_WIDTH * 3 + i / 16, cstr);
-    }
-}
 
 void user_loop(struct MemGlobal* mem, struct StateGlobal* state, struct StateGlobal* prev) {
 
@@ -55,6 +42,33 @@ void sys_loop(struct MemGlobal* mem) {
     mem->kbd_keycode = kbd_keycode();
 }
 
+void test_mem() {
+    string test512 = mem_512();
+    for (int i = 0; i<512; i++) {
+        test512[i] = 'q';
+    }
+    test512[8] = '\0';
+
+    string test10kb = mem_10kb();
+    if (test10kb == NULL)
+        print(SCREEN_WIDTH * 10, "test10kb is NULL!");
+
+    for (int i = 0; i<1024 * 10; i++) {
+        test10kb[i] = 'w';
+    }
+    test10kb[8] = '\0';
+
+    print(SCREEN_WIDTH * 4, test512);
+    print(SCREEN_WIDTH * 5, test10kb);
+
+    print(SCREEN_WIDTH * 7 + 0, num_to_str(mem_used_size(), 10));
+    print(SCREEN_WIDTH * 7 + 12, "/");
+    print(SCREEN_WIDTH * 7 + 14, num_to_str(mem_total_size(), 10));
+
+    print(SCREEN_WIDTH * 8 + 0, num_to_str((int)test512, 10));
+    print(SCREEN_WIDTH * 8 + 16, num_to_str((int)test10kb, 10));
+}
+
 void kmain() {
     print(SCREEN_WIDTH * 1, "Strelka System");
 
@@ -64,28 +78,36 @@ void kmain() {
 
     kbd_leds(0x0);
 
-    struct MemGlobal mem_global;
-    struct StateGlobal state_global;
-    struct StateGlobal state_global_prev;
+    int memsize = mem_get_size();
+    print(SCREEN_WIDTH * 2 + 0, "Memory(Mb):     / ");
+    print(SCREEN_WIDTH * 2 + 12, num_to_str(mem_get_overall_used() / 1024 / 1024, 10));
+    print(SCREEN_WIDTH * 2 + 18, memsize > 0 ? num_to_str(memsize / 1024 / 1024, 10) : ">=4Gb");
 
-    state_global.symbol = 0;
-    state_global.initialized = false;
+    mem_init();
 
-    state_global_prev.symbol = 0;
-    state_global_prev.initialized = false;
+    // struct MemGlobal mem_global;
+    // struct StateGlobal state_global;
+    // struct StateGlobal state_global_prev;
 
-    while (1) {
-        sys_loop(&mem_global);
-        user_loop(&mem_global, &state_global, &state_global_prev);
+    // state_global.symbol = 0;
+    // state_global.initialized = false;
 
-        state_global_prev.symbol = state_global.symbol;
-        state_global_prev.initialized = state_global.initialized;
+    // state_global_prev.symbol = 0;
+    // state_global_prev.initialized = false;
 
-        u8 kc = mem_global.kbd_keycode;
-        print(SCREEN_WIDTH * 12, num_to_str(kc, 16));
-        print(SCREEN_WIDTH * 13, char_to_str(kbd_symbol(kc)));
-    }
+    // while (1) {
+    //     sys_loop(&mem_global);
+    //     user_loop(&mem_global, &state_global, &state_global_prev);
 
-    // test_mem_in_vm();
+    //     state_global_prev.symbol = state_global.symbol;
+    //     state_global_prev.initialized = state_global.initialized;
+
+    //     u8 kc = mem_global.kbd_keycode;
+    //     print(SCREEN_WIDTH * 12, num_to_str(kc, 16));
+    //     print(SCREEN_WIDTH * 13, char_to_str(kbd_symbol(kc)));
+    // }
+
+
+    test_mem();
 
 }
