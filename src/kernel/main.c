@@ -2,6 +2,7 @@
 #include "std/io.h"
 #include "std/keyboard.h"
 #include "std/mem.h"
+#include "std/ata.h"
 
 #define SCREEN_WIDTH 80
 #define SCREEN_HEIGHT 25
@@ -75,6 +76,36 @@ void test_mem() {
     print(SCREEN_WIDTH * 10 + 0, num_to_str(mem_used_size(), 10));
 }
 
+void test_disk() {
+    string contents = mem_512();
+
+    ata_read_sectors(contents, 0x0, 1);
+
+    for (int i = 0; i<512; i++) {
+        print(SCREEN_WIDTH*3 + i, char_to_str(contents[i]));
+    }
+
+    for (int i=0; i<512; i++) {
+        contents[i] = 0;
+    }
+    contents[0] = '2';
+    contents[1] = 'n';
+    contents[2] = 'd';
+
+    ata_write_sectors(0x3, 1, contents);
+
+    // for (int i=1; i < 1000000; i++) {
+
+    // }
+
+    ata_read_sectors(contents, 0x3, 1);
+    for (int i = 0; i<512; i++) {
+        print(SCREEN_WIDTH*3 + i, char_to_str(contents[i]));
+    }
+    
+    mem_free(contents);
+}
+
 void kmain() {
     print(SCREEN_WIDTH * 1, "Strelka System");
 
@@ -114,6 +145,7 @@ void kmain() {
     // }
 
 
-    test_mem();
+    //test_mem();
+    test_disk();
 
 }

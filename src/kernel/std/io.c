@@ -19,3 +19,27 @@ u8 inb(u16 port)
     return ret;
 }
 
+u16 inw(u16 portid)
+{
+	u16 ret;
+	__asm__ volatile ("inw %%dx, %%ax":"=a"(ret):"d"(portid));
+	return ret;
+}
+
+u32 inl(u16 portid)
+{
+	u32 ret;
+	__asm__ volatile ("inl %%dx, %%eax":"=a"(ret):"d"(portid));
+	return ret;
+}
+
+void outw(u16 portid, u16 value)
+{
+	__asm__ volatile ("outw %%ax, %%dx": :"d" (portid), "a" (value));
+}
+
+void outl(u16 portid, u32 value)
+{
+	__asm__ volatile ("outl %%eax, %%dx": :"d" (portid), "a" (value));
+}
+
