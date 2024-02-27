@@ -43,6 +43,24 @@ void* mem_section(int index) {
     }
 }
 
+bool mem_free(void* ptr) {
+    struct MemoryTablesList* mem_list = (struct MemoryTablesList*)MEM_DATA_ADDR;
+    struct MemoryTable* mem_table = mem_list->first;
+    
+    while (mem_table != NULL) {
+        ulong offset = (ulong)ptr - (ulong)&(mem_table->memory);
+
+        if (offset < mem_table->section_size * MEM_SECTIONS_COUNT) {
+            int index = offset / mem_table->section_size;
+            mem_table->sections_enabled[index] = false;
+            return true;
+        }        
+
+        mem_table = mem_table->next;
+    }
+    return false;
+}
+
 void mem_block_init(int section_size) {
     struct MemoryTablesList* mem_list = (struct MemoryTablesList*)MEM_DATA_ADDR;    
     struct MemoryTable* mem_table = get_block(mem_list->count - 1);

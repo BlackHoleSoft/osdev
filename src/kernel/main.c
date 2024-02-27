@@ -67,6 +67,12 @@ void test_mem() {
 
     print(SCREEN_WIDTH * 8 + 0, num_to_str((int)test512, 10));
     print(SCREEN_WIDTH * 8 + 16, num_to_str((int)test10kb, 10));
+
+    print(SCREEN_WIDTH * 8 + 32, num_to_str(MEM_FIRST_TABLE_ADDR, 10));
+
+    bool success = mem_free(test512);
+    print(SCREEN_WIDTH * 9, num_to_str(success, 10));
+    print(SCREEN_WIDTH * 10 + 0, num_to_str(mem_used_size(), 10));
 }
 
 void kmain() {
