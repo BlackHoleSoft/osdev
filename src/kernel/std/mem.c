@@ -36,11 +36,13 @@ void* mem_section(int index) {
 
     // find first unused section in block
     for (int i=0; i<MEM_SECTIONS_COUNT; i++) {
-        if (!mem_table->sections_enabled[i]) {
+        if (mem_table->sections_enabled[i] == false) {
             mem_table->sections_enabled[i] = true;
-            return (void*)(mem_table->memory + i * mem_table->section_size);
+            // only get ADDRESS of memory field, not a value !!!
+            return (void*)((ulong)&mem_table->memory + (ulong)i * mem_table->section_size);
         }
     }
+    return NULL;
 }
 
 bool mem_free(void* ptr) {
@@ -48,7 +50,8 @@ bool mem_free(void* ptr) {
     struct MemoryTable* mem_table = mem_list->first;
     
     while (mem_table != NULL) {
-        ulong offset = (ulong)ptr - (ulong)&(mem_table->memory);
+        // only get ADDRESS of memory field, not a value !!!
+        ulong offset = (ulong)ptr - (ulong)(&(mem_table->memory));
 
         if (offset < mem_table->section_size * MEM_SECTIONS_COUNT) {
             int index = offset / mem_table->section_size;
@@ -71,7 +74,7 @@ void mem_block_init(int section_size) {
     new_table->next = NULL;
     new_table->section_size = section_size;
     new_table->block_addr = block_addr;
-    new_table->memory = (ulong)&new_table->memory;
+    new_table->memory = (ulong)(&(new_table->memory));
 
     for (int i=0; i<MEM_SECTIONS_COUNT; i++) {
         new_table->sections_enabled[i] = false;
@@ -89,7 +92,7 @@ void mem_init() {
     first_table->section_size = 512;
     first_table->next = NULL;
     first_table->block_addr = MEM_FIRST_TABLE_ADDR;
-    first_table->memory = (ulong)&first_table->memory;
+    first_table->memory = (ulong)(&(first_table->memory));
     
     for (int i=0; i<MEM_SECTIONS_COUNT; i++) {
         first_table->sections_enabled[i] = false;

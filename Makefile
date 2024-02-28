@@ -6,7 +6,7 @@ asm_object_files := $(patsubst src/asm/%.asm, build/%.o, $(asm_source_files))
 
 $(kernel_object_files): build/kernel/%.o : src/kernel/%.c
 	mkdir -p $(dir $@) && \
-	gcc -m32 -c -ffreestanding $(patsubst build/kernel/%.o, src/kernel/%.c, $@) -o $@
+	gcc -m32 -c -ffreestanding -O0 $(patsubst build/kernel/%.o, src/kernel/%.c, $@) -o $@
 
 $(asm_object_files): build/%.o : src/asm/%.asm
 	mkdir -p $(dir $@) && \

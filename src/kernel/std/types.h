@@ -8,5 +8,5 @@
 #define NULL (void*)0
 
 #define bool unsigned char
-#define true 1
-#define false 0
+#define true (bool)1
+#define false (bool)0
