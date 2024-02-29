@@ -74,7 +74,7 @@ enum KEYCODE {
 
 void kbd_ack(void) {
     int c = 0;
-    while(c < 1000 && !(inb(0x60)==0xfa)) {
+    while(c < 100000 && !(inb(0x60)==0xfa)) {
         c++;
     }
 }
@@ -83,6 +83,20 @@ void kbd_leds(u8 value) {
     outb(0x60, 0xed);
     kbd_ack();
     outb(0x60, value);
+}
+
+void kbd_enable() {
+	for (int i = 0; i < 8; i++) {
+        outb(0x60, 0xF4);
+    }
+	kbd_ack();
+}
+
+void kbd_disable() {
+	for (int i = 0; i < 8; i++) {
+        outb(0x60, 0xF5);
+    }
+	kbd_ack();
 }
 
 u8 kbd_keycode() {

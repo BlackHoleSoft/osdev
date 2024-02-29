@@ -32,10 +32,10 @@ void user_loop(struct MemGlobal* mem, struct StateGlobal* state, struct StateGlo
     //render
 
     if (state->initialized == false) {
-        print(SCREEN_WIDTH * 6, "Enter:");
+        println("Enter:");
     } else {        
         //print(SCREEN_WIDTH * 6, "Symbol:");
-        print(SCREEN_WIDTH * 6 + 9, char_to_str(state->symbol));
+        println(char_to_str(state->symbol));
     }
 }
 
@@ -43,16 +43,32 @@ void sys_loop(struct MemGlobal* mem) {
     mem->kbd_keycode = kbd_keycode();
 }
 
-void test_numbers() {
-    void* test = (void*)(((struct MemoryTable*)MEM_FIRST_TABLE_ADDR)->memory);
+void test_print() {
+    clear();
+    println("First string");
+    println("Second string");
+    print("Third string ");
+    print_colored("Some value", 0x7);
+    print("\n");
+    print("\n");
+    print("\n");
+    println("Some string...");
+}
 
-    print(SCREEN_WIDTH * 3, num_to_str(666, 10));
-    print(SCREEN_WIDTH * 4, num_to_str(-666, 10));
-    print(SCREEN_WIDTH * 5, num_to_str(2000000000, 10));
-    print(SCREEN_WIDTH * 6, num_to_str(true, 10));
-    print(SCREEN_WIDTH * 7, num_to_str(false, 10));
-    print(SCREEN_WIDTH * 8, num_to_str((int)test, 16));
-    print(SCREEN_WIDTH * 9, num_to_str((int)NULL, 10));
+void test_numbers() {
+    println(num_to_str(666, 10));
+    println(num_to_str(-666, 10));
+    println(num_to_str(2000000000, 10));
+    println(num_to_str(true, 10));
+    println(num_to_str(false, 10));
+    println(num_to_str((int)NULL, 10));
+}
+
+void test_kb() {
+    kbd_enable();
+    print("Keyboard test: ");
+    for (int i = 0; i<9999; i++)
+        print_at(SCREEN_WIDTH * 0 + 20, num_to_str(kbd_keycode(), 16), 0x2);
 }
 
 void test_mem() {
@@ -64,48 +80,54 @@ void test_mem() {
 
     string test10kb = mem_10kb();
     if (test10kb == NULL)
-        print(SCREEN_WIDTH * 10, "test10kb is NULL!");
+        println("test10kb is NULL!");
 
     for (int i = 0; i<512; i++) {
         test10kb[i] = 'w';
     }
     test10kb[8] = '\0';
 
-    print(SCREEN_WIDTH * 4, test512);
-    print(SCREEN_WIDTH * 5, test10kb);
+    println(test512);
+    println(test10kb);
 
-    print(SCREEN_WIDTH * 7 + 0, num_to_str(mem_used_size(), 10));
-    print(SCREEN_WIDTH * 7 + 12, "/");
-    print(SCREEN_WIDTH * 7 + 14, num_to_str(mem_total_size(), 10));
+    print(num_to_str(mem_used_size(), 10));
+    print(" / ");
+    println(num_to_str(mem_total_size(), 10));
 
-    print(SCREEN_WIDTH * 8 + 0, num_to_str((int)test512, 10));
+    print(num_to_str((int)test512, 10));
 
-    print(SCREEN_WIDTH * 8 + 50, num_to_str((int)(string)mem_512(), 10));
-    print(SCREEN_WIDTH * 8 + 65, num_to_str((int)(string)mem_512(), 10));
+    print(num_to_str((int)(string)mem_512(), 10));
+    print(num_to_str((int)(string)mem_512(), 10));
 
-    print(SCREEN_WIDTH * 8 + 16, num_to_str((int)test10kb, 10));
+    print(num_to_str((int)test10kb, 10));
 
-    print(SCREEN_WIDTH * 8 + 32, num_to_str(MEM_FIRST_TABLE_ADDR, 10));
+    println(num_to_str(MEM_FIRST_TABLE_ADDR, 10));
     
-    print(SCREEN_WIDTH * 9, num_to_str(mem_free(test512), 10));
-    print(SCREEN_WIDTH * 9 + 8, num_to_str(mem_free(test10kb), 10));
+    print(num_to_str(mem_free(test512), 10));
+    println(num_to_str(mem_free(test10kb), 10));
     
-    print(SCREEN_WIDTH * 11, num_to_str((int)mem_512(), 10));
-    print(SCREEN_WIDTH * 11 + 20, num_to_str((int)mem_512(), 10));
-    print(SCREEN_WIDTH * 11 + 40, num_to_str((int)mem_512(), 10));
+    print(num_to_str((int)mem_512(), 10));
+    print(num_to_str((int)mem_512(), 10));
+    println(num_to_str((int)mem_512(), 10));
 
-    print(SCREEN_WIDTH * 10 + 0, num_to_str(mem_used_size(), 10));
+    println(num_to_str(mem_used_size(), 10));
 }
 
 void test_disk() {
     string contents = mem_512();
-    print(SCREEN_WIDTH * 1, num_to_str((int)contents, 16));
+    print(num_to_str((int)contents, 16));
+    print("  ");
+    print(num_to_str(ata_has_any_disk(), 10));
+    print("  ");
+    println(num_to_str(ata_test_rw_bytes(), 10));
+    print("\n");
 
     ata_read_sectors(contents, 0x3, 1);
 
     for (int i = 0; i<512; i++) {
-        print(SCREEN_WIDTH*3 + i, char_to_str(contents[i]));
+        print(char_to_str(contents[i]));
     }
+    print("\n");
     
     contents[0] = contents[0] < 'a' ? 'a' : contents[0] + 1;
     contents[1] = '!';
@@ -122,7 +144,7 @@ void test_disk() {
 }
 
 void kmain() {
-    print(SCREEN_WIDTH * 1, "Strelka System");
+    println("Strelka System");
 
     //kbd_leds(0x3);
 
@@ -130,10 +152,10 @@ void kmain() {
 
     //kbd_leds(0x0);
 
-    int memsize = mem_get_size();
-    print(SCREEN_WIDTH * 2 + 0, "Memory(Mb):     / ");
-    print(SCREEN_WIDTH * 2 + 12, num_to_str(mem_get_overall_used() / 1024 / 1024, 10));
-    print(SCREEN_WIDTH * 2 + 18, memsize > 0 ? num_to_str(memsize / 1024 / 1024, 10) : ">=4Gb");
+    // int memsize = mem_get_size();
+    // print(SCREEN_WIDTH * 2 + 0, "Memory(Mb):     / ");
+    // print(SCREEN_WIDTH * 2 + 12, num_to_str(mem_get_overall_used() / 1024 / 1024, 10));
+    // print(SCREEN_WIDTH * 2 + 18, memsize > 0 ? num_to_str(memsize / 1024 / 1024, 10) : ">=4Gb");
 
     mem_init();
 
@@ -159,10 +181,22 @@ void kmain() {
     //     print(SCREEN_WIDTH * 13, char_to_str(kbd_symbol(kc)));
     // }
 
+    test_print();
+
+    for (int i=1; i > 0; i++);
+    for (int i=1; i > 0; i++);
+    for (int i=1; i > 0; i++);
+    clear();
+
     test_numbers();
 
     for (int i=1; i > 0; i++);
     for (int i=1; i > 0; i++);
+    //for (int i=1; i > 0; i++);
+    clear();
+
+    test_kb();
+
     for (int i=1; i > 0; i++);
     clear();
 
@@ -170,8 +204,8 @@ void kmain() {
 
     for (int i=1; i > 0; i++);
     for (int i=1; i > 0; i++);
-    for (int i=1; i > 0; i++);
-    for (int i=1; i > 0; i++);
+    //for (int i=1; i > 0; i++);
+    //for (int i=1; i > 0; i++);
     clear();
 
     test_disk();

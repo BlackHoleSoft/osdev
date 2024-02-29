@@ -39,6 +39,16 @@ void ATA_wait_DRQ() // Wait fot drq to be 1
     while (!(inb(0x1F7) & STATUS_RDY));
 }
 
+bool ata_has_any_disk() {
+    return inb(0x1F7) != 0xFF;
+}
+
+bool ata_test_rw_bytes() {
+    outb(0x1F2, 0x3);
+    outb(0x1F3, 0x4);
+    return inb(0x1F2) == 0x3 && inb(0x1F3) == 0x4;
+}
+
 void ata_read_sectors(u8* target_address, u32 LBA, u8 sector_count) {
     // wait if it's busy
     ATA_wait_BSY();
@@ -84,4 +94,8 @@ void ata_write_sectors(u32 LBA, u8 sector_count, u8 *rawBytes) {
     }
     bytes += 256;
   }
+
+  // clear cache  
+  outb(0x1F7, 0xE7);
+  ATA_wait_BSY();
 }

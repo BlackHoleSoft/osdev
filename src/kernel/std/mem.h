@@ -17,6 +17,7 @@ struct MemoryTable
 struct MemoryTablesList {
     struct MemoryTable* first;
     int count;
+    int vga_offset;
 };
 
 int mem_get_size();
