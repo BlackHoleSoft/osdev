@@ -52,6 +52,7 @@ void test_print() {
     print("\n");
     print("\n");
     print("\n");
+    println("println");
     println("Some string...");
 }
 
@@ -67,7 +68,7 @@ void test_numbers() {
 void test_kb() {
     kbd_enable();
     print("Keyboard test: ");
-    for (int i = 0; i<9999; i++)
+    for (int i = 0; i<99999; i++)
         print_at(SCREEN_WIDTH * 0 + 20, num_to_str(kbd_keycode(), 16), 0x2);
 }
 
@@ -93,21 +94,29 @@ void test_mem() {
     print(num_to_str(mem_used_size(), 10));
     print(" / ");
     println(num_to_str(mem_total_size(), 10));
+    print("  ");
 
     print(num_to_str((int)test512, 10));
+    print("  ");
 
     print(num_to_str((int)(string)mem_512(), 10));
+    print("  ");
     print(num_to_str((int)(string)mem_512(), 10));
+    print("  ");
 
     print(num_to_str((int)test10kb, 10));
+    print("  ");
 
     println(num_to_str(MEM_FIRST_TABLE_ADDR, 10));
     
     print(num_to_str(mem_free(test512), 10));
+    print("  ");
     println(num_to_str(mem_free(test10kb), 10));
     
     print(num_to_str((int)mem_512(), 10));
+    print("  ");
     print(num_to_str((int)mem_512(), 10));
+    print("  ");
     println(num_to_str((int)mem_512(), 10));
 
     println(num_to_str(mem_used_size(), 10));
@@ -120,6 +129,7 @@ void test_disk() {
     print(num_to_str(ata_has_any_disk(), 10));
     print("  ");
     println(num_to_str(ata_test_rw_bytes(), 10));
+    print("  ");
     print("\n");
 
     ata_read_sectors(contents, 0x3, 1);
@@ -129,16 +139,11 @@ void test_disk() {
     }
     print("\n");
     
-    contents[0] = contents[0] < 'a' ? 'a' : contents[0] + 1;
-    contents[1] = '!';
-    contents[2] = '\0';
+    // contents[0] = contents[0] < 'a' ? 'a' : contents[0] + 1;
+    // contents[1] = '!';
+    // contents[2] = '\0';
 
-    ata_write_sectors(0x3, 1, contents);
-
-    // ata_read_sectors(contents, 0x3, 1);
-    // for (int i = 0; i<512; i++) {
-    //     print(SCREEN_WIDTH*3 + i, char_to_str(contents[i]));
-    // }
+    // ata_write_sectors(0x3, 1, contents);    
     
     mem_free(contents);
 }
@@ -204,7 +209,7 @@ void kmain() {
 
     for (int i=1; i > 0; i++);
     for (int i=1; i > 0; i++);
-    //for (int i=1; i > 0; i++);
+    for (int i=1; i > 0; i++);
     //for (int i=1; i > 0; i++);
     clear();
 

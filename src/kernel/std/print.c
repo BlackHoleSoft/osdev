@@ -58,7 +58,8 @@ void println(string str) {
 string num_to_str(int num, int r) {
     if (num == 0) return "0";
 
-    string str = "0000000000000000";
+    string str = mem_512();
+    str[15] = 0;
     int n = num;
     int i = 0;   
     int end = str_len(str) - 1;
@@ -70,6 +71,7 @@ string num_to_str(int num, int r) {
         i++;
     }
     str[end] = '\0';
+    mem_free(str);
     return (string)((ulong)str + (end - i));
 }
 

@@ -46,7 +46,7 @@ bool ata_has_any_disk() {
 bool ata_test_rw_bytes() {
     outb(0x1F2, 0x3);
     outb(0x1F3, 0x4);
-    return inb(0x1F2) == 0x3 && inb(0x1F3) == 0x4;
+    return (inb(0x1F2) == 0x3 && inb(0x1F3) == 0x4) ? 1 : 0;
 }
 
 void ata_read_sectors(u8* target_address, u32 LBA, u8 sector_count) {
