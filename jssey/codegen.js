@@ -5,6 +5,8 @@ class Parser {
     _opcodes = {
         '_literal_': 0x1,
         '_string_': 0x2,
+        '_var_': 0x3,
+        '_getvar_': 0x4,
         
         '_push_': 0xa,
         '_pop_': 0xb,
@@ -16,9 +18,24 @@ class Parser {
         '=': 0x40,        
     }
 
+    _parseFns = {};
+    _variables = [];
     _result = [];
 
-    parseLiteral({value}) {
+    constructor () {
+        this._parseFns = {
+            "ExpressionStatement": this.parseExpressionStatement,
+            "BinaryExpression": this.parseBinaryExpression,
+            "Literal": this.parseLiteral,
+            "VariableDeclarator": this.parseVariableDeclarator,
+            "VariableDeclaration": this.parseVariableDeclaration,
+            "Identifier": this.parseIdentifier,
+            "AssignmentExpression": this.parseAssignmentExpression,
+        };
+    }
+
+
+    parseLiteral = ({value}) => {
         if (typeof value === 'string') {
             
         } else {
@@ -26,41 +43,73 @@ class Parser {
         }
     }
 
-    parseBinaryExpression({left, right, operator}) {
+    parseIdentifier = ({name}) => {
+        let varIndex = this._variables.indexOf(name);
+        this._result.push(['_getvar_', varIndex]);
+    }
+
+    parseExpressionStatement = (node) => {
+        this.parseNode(node.expression);
+    }
+
+    parseBinaryExpression = ({left, right, operator}) => {
         let oper = this._opcodes[operator];
         if (!oper) {
             throw new Error("Invalid operator: " + operator);
         }
 
-        this.parseExpression(left);
-        this.parseExpression(right);
+        this.parseNode(left);
+        this.parseNode(right);
 
         this._result.push([operator]);
     }
 
-    parseExpression(node) {
-        if (node.type === "BinaryExpression") {
-            this.parseBinaryExpression(node);
-        }
-        if (node.type === "Literal") {
-            this.parseLiteral(node);
+    parseAssignmentExpression = ({operator, left, right}) => {
+        if (operator === '=') {
+            let varName = left.name;
+            let varIndex = this._variables.indexOf(varName);
+
+            if (varIndex < 0)
+                throw new Error("Variable was not initialized: " + varName);
+
+            this.parseNode(right);
+            this._result.push(['_var_', varIndex]);
+        } else {
+            throw new Error("Invalid assignment operator: ", operator);
         }
     }
 
-    parseNode(node) {
-        if (node.type === "ExpressionStatement") {
-            this.parseExpression(node.expression);
-        }
+    parseVariableDeclaration = ({declarations}) => {
+        declarations.forEach(d => this.parseNode(d));
     }
 
-    parseBody(body) {
+    parseVariableDeclarator = ({init, id}) => {
+        let varName = id.name;
+
+        this.parseNode(init);
+
+        let index = this._variables.length;
+        this._variables.push(varName);
+
+        this._result.push(["_var_", index]);
+    }
+    
+    parseNode = (node) => {
+        if (!this._parseFns[node.type]) {
+            throw new Error("Invalid node type: " + node.type);
+        }
+
+        this._parseFns[node.type](node);
+    }
+
+    parseBody = (body) => {
         body.forEach(node => {
             this.parseNode(node);
         });
         return this._result;
     }
 
-    reset() {
+    reset = () => {
         this._result = [];
     }
 }
