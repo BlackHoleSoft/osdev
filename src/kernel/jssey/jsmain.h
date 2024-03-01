@@ -1,1 +1,1 @@
-#define OP_LET "let"
+void js_run(void* bytecode);

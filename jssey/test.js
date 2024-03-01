@@ -1,2 +1,2 @@
-let a = "test"
-_print(a);
+let a = 6;
+a + 4;

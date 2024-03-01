@@ -3,6 +3,7 @@
 #include "std/keyboard.h"
 #include "std/mem.h"
 #include "std/ata.h"
+#include "jssey/jsmain.h"
 
 #define SCREEN_WIDTH 80
 #define SCREEN_HEIGHT 25
@@ -152,6 +153,22 @@ void test_disk() {
     mem_free(contents);
 }
 
+void test_js() {
+    string code = mem_512();
+    ata_read_sectors(code, 0x4, 1);
+
+    for (int i = 0; i<512; i++) {
+        print(char_to_str(code[i]));
+    }
+    print("\n");
+
+    for (int i=1; i>0; i++);
+    clear();
+
+    js_run(code);
+    println("End of execution");
+}
+
 void kmain() {
     println("Strelka System");
 
@@ -206,7 +223,7 @@ void kmain() {
 
     test_kb();
 
-    for (int i=1; i > 0; i++);
+    //for (int i=1; i > 0; i++);
     clear();
 
     test_mem();
@@ -218,6 +235,12 @@ void kmain() {
     clear();
 
     test_disk();
+
+    for (int i=1; i > 0; i++);
+    for (int i=1; i > 0; i++);
+    clear();
+
+    test_js();
 
     println("");
     println("End of tests");

@@ -1,62 +1,89 @@
 #include "jsmain.h"
 #include "../std/string.h"
 #include "../std/mem.h"
+#include "../std/print.h"
 
-// split into tokens ( 3 "let" 4 "test" 1 "=" 2 "35" )
-string split_line(string buffer, string code) {
-    int splits_len = 1;
-    int prev_split_pos = 0;
-    int buffer_ptr = 0;
-    char splits[] = { ' ' };
-    int i;
-    for (i=0; code[i] > 0; i++) {
-        bool do_split = false;
-        for (int s=0; s<splits_len; s++) {
-            do_split = do_split || splits[s] == code[i];
-        }
-        // create token
-        if (do_split) {
-            // substring ( 3 "let" 4 "test" 1 "=" 2 "35" )
-            for (int j=0; j < i - prev_split_pos; j++) {
-                buffer[buffer_ptr + j + 0] = i - prev_split_pos;    // length of token
-                buffer[buffer_ptr + j + 1] = code[prev_split_pos + j + 1];  // token string
+#define OPCODE_ADD 0x20
+#define OPCODE_SUB 0x21
+#define OPCODE_MUL 0x22
+#define OPCODE_DIV 0x23
+#define OPCODE_SET 0x40
+
+#define OPCODE_PUSH 0xa
+#define OPCODE_POP 0xb
+
+#define OPCODE_VAR 0x3
+#define OPCODE_GETVAR 0x4
+#define OPCODE_RET 0x5
+#define OPCODE_CALL 0x6
+#define OPCODE_MEM 0x7
+
+struct ByteCode {
+    u16 variables_count;
+    u16 functions_count;
+    int functions;
+};
+
+void js_run(void* bytecode) {
+    string memory = mem_512();
+    double* variables = mem_512();
+    double* stack = mem_512();
+    int stack_ptr = -1;
+
+    struct ByteCode* code = (struct ByteCode*)bytecode;
+    char* fn_ptr = (char*)&code->functions;
+    while (*(int*)fn_ptr > 0) {
+        println(num_to_str(*(int*)fn_ptr, 10));
+        int length = *(int*)fn_ptr;
+        char* bytes = fn_ptr + 4;
+        for (int cp=0; cp<length; ) {
+            char value_u8 = bytes[cp];
+            switch (value_u8)
+            {
+                case OPCODE_PUSH:
+                    stack[++stack_ptr] = *(double*)(bytes + cp + 1);
+                    cp += 1 + 8 * 1;
+                    break;
+
+                case OPCODE_POP:
+                    stack_ptr--;
+                    cp += 1 + 8 * 0;
+                    break;
+
+                case OPCODE_VAR:
+                    variables[(int)*(double*)(bytes + cp + 1)] = stack[stack_ptr];
+                    cp += 1 + 8 * 1;
+                    break;
+
+                case OPCODE_GETVAR:
+                    stack[++stack_ptr] = variables[(int)*(double*)(bytes + cp + 1)];
+                    cp += 1 + 8 * 1;
+                    break;
+
+                case OPCODE_ADD:
+                    stack[++stack_ptr] = stack[stack_ptr--] + stack[stack_ptr--];
+                    cp += 1 + 8 * 2;
+                    break;
+
+                default:
+                    break;
             }
-
-            buffer_ptr += i - prev_split_pos;
-            prev_split_pos = i;            
         }
+
+        fn_ptr += length + 4;
     }
-    buffer[i] = '\0';
-    return buffer;
-}
 
-// gets priority array of splitted line
-void get_priority(string buffer, int result[], string operations[], int priorities[], int opcount) {
-    int pos = 0;
-    int current = 0;
-    while (buffer[pos] > 0) {
-        int len = buffer[pos];
-        string oper = &buffer[pos + 1];
-        for (int i=0; i<opcount; i++) {
-            bool compare = true;
-            for (int j=0; j<len; j++) {
-                compare = compare && oper[j] == operations[i][j];
-            }
-            // if oper in operations, then add priority to result at current op index
-            if (compare) {
-                result[current] = priorities[i];
-                current++;
-                break;
-            }
-        }
-        
-
-        pos++;
+    print("Variables: ");
+    for (int i = 0; i<code->variables_count; i++) {
+        print(num_to_str((int)variables[i], 10));
+        print("; ");
     }
-}
+    println("");
 
-void jsmain() {
-    string test_code = "let test = 6 + 4";
-
-    string line_splitted = split_line(mem_512(), test_code);
+    print("Stack: ");
+    for (int i = 0; i<4; i++) {
+        print(num_to_str((int)stack[stack_ptr - i], 10));
+        print("; ");
+    }
+    println("");
 }
