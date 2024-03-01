@@ -26,9 +26,7 @@ class Parser {
     _parseFns = {};
     _variables = [];
     _functions = ['main'];
-    _result = {
-        0: []
-    }
+    _result = [[]];
 
     constructor () {
         this._parseFns = {
@@ -55,7 +53,7 @@ class Parser {
     }
 
     addToMemory = (bytes) => {
-        this.write(['_mem_', bytes.length, ...bytes]);
+        this.write(['_mem_', bytes.length, ...bytes.map(b => '#'+b)]);
     }
 
     parseReturnStatement = ({argument}) => {
@@ -196,7 +194,51 @@ class Parser {
             main: []
         };
     }
-}
+
+    doubleToByteArray = (number) => {
+        let buffer = new ArrayBuffer(8);         // JS numbers are 8 bytes long, or 64 bits
+        let longNum = new Float64Array(buffer);  // so equivalent to Float64
+    
+        longNum[0] = number;
+    
+        return Array.from(new Int8Array(buffer));  // reverse to get little endian
+    }
+
+    shortToByteArray = (number) => {
+        let buffer = new ArrayBuffer(2);         // JS numbers are 8 bytes long, or 64 bits
+        let num = new Int16Array(buffer);  // so equivalent to Float64
+    
+        num[0] = number;
+    
+        return Array.from(new Int8Array(buffer));  // reverse to get little endian
+    }
+
+    intToByteArray = (number) => {
+        let buffer = new ArrayBuffer(4);         // JS numbers are 8 bytes long, or 64 bits
+        let num = new Int32Array(buffer);  // so equivalent to Float64
+    
+        num[0] = number;
+    
+        return Array.from(new Int8Array(buffer));  // reverse to get little endian
+    }
+
+    getByteCode = () => {
+        let bytes = [
+            // variables count
+            ...this.shortToByteArray(this._variables.length),
+            // functions count
+            ...this.shortToByteArray(this._functions.length),
+            // functions list
+            ...this._result.map(r => {
+                let rFlat = r.flat();
+                return [...this.intToByteArray(rFlat.length), ...rFlat.map(byte => typeof byte === 'string' ? 
+                    byte.startsWith('#') ? [parseInt(byte.substring(1))] : [this._opcodes[byte]] 
+                        : this.doubleToByteArray(byte)).flat()]
+            }).flat()
+        ];
+        return bytes;
+    }
+} 
 
 class Codegen {
     _config = {
@@ -212,6 +254,13 @@ class Codegen {
         const operations = treeParser.parseBody(tree.body);
 
         console.log(operations);
+
+        let bytecode = treeParser.getByteCode();        
+
+        console.log('Bytes:');
+        console.log(bytecode);
+
+        return bytecode;
     }
 }
 

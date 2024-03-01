@@ -7,4 +7,6 @@ const filename = args[2];
 const code = fs.readFileSync(filename, 'utf8');
 
 const codegen = new Codegen();
-codegen.generate(code);
+const bytecode = codegen.generate(code);
+
+fs.writeFileSync('./program.bin', Buffer.from(bytecode));
