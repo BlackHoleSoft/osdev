@@ -54,6 +54,9 @@ void test_print() {
     print("\n");
     println("println");
     println("Some string...");
+    string mem = mem_512();
+    println(str_concat(mem, "String ", "concatenation"));
+    mem_free(mem);
 }
 
 void test_numbers() {
@@ -63,6 +66,7 @@ void test_numbers() {
     println(num_to_str(true, 10));
     println(num_to_str(false, 10));
     println(num_to_str((int)NULL, 10));
+    println("");    
 }
 
 void test_kb() {
@@ -214,5 +218,8 @@ void kmain() {
     clear();
 
     test_disk();
+
+    println("");
+    println("End of tests");
 
 }

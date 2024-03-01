@@ -1,0 +1,15 @@
+{
+  "name": "jssey",
+  "version": "0.1.0",
+  "description": "Javascript bytecode generator for strelka js vm",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node ./index.js"
+  },
+  "author": "Anton Kanashov",
+  "license": "ISC",
+  "dependencies": {
+    "acorn": "^8.11.3"
+  }
+}

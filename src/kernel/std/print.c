@@ -19,12 +19,6 @@ void clear() {
     }
 }
 
-int str_len(string str) {
-    int len;
-    for (len = 0; str[len] > 0; len++) { }
-    return len;
-}
-
 int print_at(int offset, string str, u8 color) {
     char* vid = (char*)0xb8000;
 
@@ -53,30 +47,4 @@ void print(string str) {
 void println(string str) {
     print(str);
     print("\n");
-}
-
-string num_to_str(int num, int r) {
-    if (num == 0) return "0";
-
-    string str = mem_512();
-    str[15] = 0;
-    int n = num;
-    int i = 0;   
-    int end = str_len(str) - 1;
-
-    while (n > 0) {
-        char mod = n % r;
-        n /= r;
-        str[end - 1 - i] = mod > 9 ? (mod - 10) + 0x61 : mod + 0x30;
-        i++;
-    }
-    str[end] = '\0';
-    mem_free(str);
-    return (string)((ulong)str + (end - i));
-}
-
-string char_to_str(char c) {
-    string str = " ";
-    str[0] = c;
-    return str;
 }
