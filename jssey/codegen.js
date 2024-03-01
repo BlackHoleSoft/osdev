@@ -7,6 +7,8 @@ class Parser {
         '_string_': 0x2,
         '_var_': 0x3,
         '_getvar_': 0x4,
+        '_ret_': 0x5,
+        '_call_': 0x6,
         
         '_push_': 0xa,
         '_pop_': 0xb,
@@ -18,9 +20,14 @@ class Parser {
         '=': 0x40,        
     }
 
+    _namesDir = ['_'];
+    _currentFunction = 0;
     _parseFns = {};
     _variables = [];
-    _result = [];
+    _functions = ['main'];
+    _result = {
+        0: []
+    }
 
     constructor () {
         this._parseFns = {
@@ -31,21 +38,86 @@ class Parser {
             "VariableDeclaration": this.parseVariableDeclaration,
             "Identifier": this.parseIdentifier,
             "AssignmentExpression": this.parseAssignmentExpression,
+            "BlockStatement": this.parseBlockStatement,
+            "FunctionDeclaration": this.parseFunctionDeclaration,
+            "ReturnStatement": this.parseReturnStatement,
+            "CallExpression": this.parseCallExpression,
         };
     }
 
+    getVarName = (initial) => {
+        return [...this._namesDir, initial].join('/');
+    }
+
+    write = (items) => {
+        this._result[this._currentFunction].push(items);
+    }
+
+    parseReturnStatement = ({argument}) => {
+        this.parseNode(argument);
+        this.write(['_ret_']);
+    }
+
+    parseFunctionDeclaration = ({id, params, body}) => {
+        let fnName = this.getVarName(id.name);
+        if (this._result[fnName])
+            throw new Error("Function already exists: " + fnName);
+
+        let fnIndex = this._functions.length;
+        this._functions.push(fnName);
+        this._result[fnIndex] = [];
+        let prevFn = this._currentFunction;
+        this._currentFunction = fnIndex;
+
+        [...params].reverse().forEach(p => {
+            let index = this._variables.length;
+            let varName = [...this._namesDir, `fn${fnIndex}_block`, p.name].join('/');
+            this._variables.push(varName);
+            this.write(['_var_', index]);
+        });        
+
+        this.parseNode(body);
+
+        this._currentFunction = prevFn;
+    }
+
+    parseCallExpression = ({callee, arguments: args}) => {
+        var fnName = this.getVarName(callee.name);
+        var fnIndex = this._functions.indexOf(fnName);
+        if (fnIndex < 0)
+            throw new Error("Function was not initialized: " + fnName);
+
+        args.forEach(a => {
+            this.parseNode(a);
+        });
+
+        this.write(['_call_', fnIndex]);
+    }
+
+    parseBlockStatement = ({body}) => {
+        this._namesDir.push(`fn${this._currentFunction}_block`);
+        body.forEach(node => {
+            this.parseNode(node);
+        });
+        this._namesDir.pop();
+    }
 
     parseLiteral = ({value}) => {
         if (typeof value === 'string') {
             
         } else {
-            this._result.push(['_push_', value]);
+            this.write(['_push_', value]);
         }
     }
 
     parseIdentifier = ({name}) => {
-        let varIndex = this._variables.indexOf(name);
-        this._result.push(['_getvar_', varIndex]);
+        let varName = this.getVarName(name);
+        let varIndex = this._variables.indexOf(varName);
+
+        if (varIndex < 0)
+            throw new Error('Variable was not initialized: ' + varName)
+
+        this.write(['_getvar_', varIndex]);
     }
 
     parseExpressionStatement = (node) => {
@@ -61,19 +133,19 @@ class Parser {
         this.parseNode(left);
         this.parseNode(right);
 
-        this._result.push([operator]);
+        this.write([operator]);
     }
 
     parseAssignmentExpression = ({operator, left, right}) => {
         if (operator === '=') {
-            let varName = left.name;
+            let varName = this.getVarName(left.name);
             let varIndex = this._variables.indexOf(varName);
 
             if (varIndex < 0)
                 throw new Error("Variable was not initialized: " + varName);
 
             this.parseNode(right);
-            this._result.push(['_var_', varIndex]);
+            this.write(['_var_', varIndex]);
         } else {
             throw new Error("Invalid assignment operator: ", operator);
         }
@@ -84,14 +156,14 @@ class Parser {
     }
 
     parseVariableDeclarator = ({init, id}) => {
-        let varName = id.name;
+        let varName = this.getVarName(id.name);
 
         this.parseNode(init);
 
         let index = this._variables.length;
         this._variables.push(varName);
 
-        this._result.push(["_var_", index]);
+        this.write(["_var_", index]);
     }
     
     parseNode = (node) => {
@@ -106,11 +178,17 @@ class Parser {
         body.forEach(node => {
             this.parseNode(node);
         });
+
+        console.log('Variables:', this._variables);
+        console.log('Functions:', this._functions);
+
         return this._result;
     }
 
     reset = () => {
-        this._result = [];
+        this._result = {
+            main: []
+        };
     }
 }
 

@@ -1,4 +1,10 @@
 const Codegen = require('./codegen');
+const fs = require('fs');
+
+const args = process.argv;
+const filename = args[2];
+
+const code = fs.readFileSync(filename, 'utf8');
 
 const codegen = new Codegen();
-codegen.generate('let a = 7 + 2, b = 9; let test = a + b; test = a + 10;');
+codegen.generate(code);
