@@ -26,7 +26,9 @@ class Parser {
     _parseFns = {};
     _variables = [];
     _functions = ['main'];
-    _result = [[]];
+    _result = [
+        [],  //main
+    ];
 
     constructor () {
         this._parseFns = {
@@ -42,6 +44,13 @@ class Parser {
             "ReturnStatement": this.parseReturnStatement,
             "CallExpression": this.parseCallExpression,
         };
+
+        this.addSystemFn('_print');
+    }
+
+    addSystemFn(name) {
+        this._result.push([]);
+        this._functions.push('_/' + name);
     }
 
     getVarName = (initial) => {
@@ -230,10 +239,10 @@ class Parser {
             ...this.shortToByteArray(this._functions.length),
             // functions list
             ...this._result.map(r => {
-                let rFlat = r.flat();
-                return [...this.intToByteArray(rFlat.length), ...rFlat.map(byte => typeof byte === 'string' ? 
-                    byte.startsWith('#') ? [parseInt(byte.substring(1))] : [this._opcodes[byte]] 
-                        : this.doubleToByteArray(byte)).flat()]
+                let rFlat = r.flat().map(byte => typeof byte === 'string' ? 
+                byte.startsWith('#') ? [parseInt(byte.substring(1))] : [this._opcodes[byte]] 
+                    : this.doubleToByteArray(byte)).flat();
+                return [...this.intToByteArray(rFlat.length), ...rFlat]
             }).flat()
         ];
         return bytes;
