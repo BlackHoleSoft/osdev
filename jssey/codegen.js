@@ -9,6 +9,7 @@ class Parser {
         '_getvar_': 0x4,
         '_ret_': 0x5,
         '_call_': 0x6,
+        '_mem_': 0x7,   // copy bytes to the memory and push address to stack
         
         '_push_': 0xa,
         '_pop_': 0xb,
@@ -51,6 +52,10 @@ class Parser {
 
     write = (items) => {
         this._result[this._currentFunction].push(items);
+    }
+
+    addToMemory = (bytes) => {
+        this.write(['_mem_', bytes.length, ...bytes]);
     }
 
     parseReturnStatement = ({argument}) => {
@@ -104,7 +109,8 @@ class Parser {
 
     parseLiteral = ({value}) => {
         if (typeof value === 'string') {
-            
+            let bytes = value.split('').map(c => c.charCodeAt(0) & 0xFF);
+            this.addToMemory(bytes);
         } else {
             this.write(['_push_', value]);
         }
