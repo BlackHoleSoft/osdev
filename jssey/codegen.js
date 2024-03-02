@@ -21,6 +21,14 @@ class Parser {
         '=': 0x40,        
     }
 
+    _varTypes = {
+        'number': 0x0,
+        'string': 0x1,
+        'boolean': 0x2,
+        'object': 0x3,
+        'pointer': 0x4,
+    }
+
     _namesDir = ['_'];
     _currentFunction = 0;
     _parseFns = {};
@@ -46,6 +54,7 @@ class Parser {
         };
 
         this.addSystemFn('_print');
+        this.addSystemFn('_toString');
     }
 
     addSystemFn(name) {
@@ -119,7 +128,7 @@ class Parser {
             let bytes = value.split('').map(c => c.charCodeAt(0) & 0xFF);
             this.addToMemory(bytes);
         } else {
-            this.write(['_push_', value]);
+            this.write(['_push_', '#' + (this._varTypes[typeof value] || 0), +value]);
         }
     }
 
@@ -135,12 +144,17 @@ class Parser {
 
     parseExpressionStatement = (node) => {
         this.parseNode(node.expression);
-    }
+    }    
 
     parseBinaryExpression = ({left, right, operator}) => {
         let oper = this._opcodes[operator];
         if (!oper) {
             throw new Error("Invalid operator: " + operator);
+        }
+
+        // if one of operands is string then concatenete two strings
+        if (operator === '+' && [left, right].some(v => v.value && typeof v.value === 'string')) {
+
         }
 
         this.parseNode(left);

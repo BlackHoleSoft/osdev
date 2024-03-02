@@ -18,6 +18,12 @@
 #define OPCODE_CALL 0x6
 #define OPCODE_MEM 0x7
 
+#define VAR_TYPE_NUMBER 0x0
+#define VAR_TYPE_STRING 0x1
+#define VAR_TYPE_BOOL 0x2
+#define VAR_TYPE_OBJECT 0x3
+#define VAR_TYPE_POINTER 0x4
+
 #define SYS_FNS_COUNT 2     // main, etc...
 
 struct ByteCode {
@@ -26,7 +32,7 @@ struct ByteCode {
     int functions;
 };
 
-void sys_print(char* str) {
+void sys_print(char* str) {    
     print_colored(str, 0x3);
     println("");
 }
@@ -36,6 +42,8 @@ double js_run(void* bytecode, bool debug) {
     double* variables = mem_512();
     double* stack = mem_512();
     char** call_stack = mem_512();
+    char* var_types = mem_512();
+    char* stack_types = mem_512();
     int stack_ptr = -1;
     int call_stack_pointer = -1;
     int memory_pointer;
@@ -60,8 +68,9 @@ double js_run(void* bytecode, bool debug) {
         switch (value_u8)
         {
             case OPCODE_PUSH:
-                stack[++stack_ptr] = *(double*)(code_pointer + 1);
-                code_pointer += 1 + 8 * 1;
+                stack_types[stack_ptr + 1] = code_pointer[1];
+                stack[++stack_ptr] = *(double*)(code_pointer + 2);
+                code_pointer += 1 + 1 + 8 * 1;
                 break;
 
             case OPCODE_POP:
@@ -70,11 +79,13 @@ double js_run(void* bytecode, bool debug) {
                 break;
 
             case OPCODE_VAR:
+                var_types[(int)*(double*)(code_pointer + 1)] = stack_types[stack_ptr];
                 variables[(int)*(double*)(code_pointer + 1)] = stack[stack_ptr--];
                 code_pointer += 1 + 8 * 1;
                 break;
 
             case OPCODE_GETVAR:
+                stack_types[stack_ptr + 1] = var_types[(int)*(double*)(code_pointer + 1)];
                 stack[++stack_ptr] = variables[(int)*(double*)(code_pointer + 1)];
                 code_pointer += 1 + 8 * 1;
                 break;
@@ -82,10 +93,12 @@ double js_run(void* bytecode, bool debug) {
             case OPCODE_CALL: 
                 int fnIndex = (int)*(double*)(code_pointer + 1);
                 if (fnIndex < SYS_FNS_COUNT) {
+                    char vtype = stack_types[stack_ptr];                    
                     switch (fnIndex)
                     {
                         case 1:
-                            sys_print(memory + (int)(stack[stack_ptr--]));
+                            sys_print(vtype == VAR_TYPE_NUMBER || vtype == VAR_TYPE_BOOL ? num_to_str((int)stack[stack_ptr], 10) : memory + (int)(stack[stack_ptr]));
+                            stack_ptr--;
                             break;
                     }
                     code_pointer += 1 + 8 * 1;
@@ -117,6 +130,7 @@ double js_run(void* bytecode, bool debug) {
                 for (int i=0; i<mlen; i++) {
                     memory[memory_pointer + i] = *(code_pointer + 1 + 8 * 1 + i);
                 }
+                stack_types[stack_ptr + 1] = VAR_TYPE_POINTER;
                 stack[++stack_ptr] = memory_pointer;
                 memory_pointer += mlen;
                 code_pointer += 1 + 8 * 1 + mlen;
@@ -162,6 +176,8 @@ double js_run(void* bytecode, bool debug) {
     if (debug) {
         print("Variables: ");
         for (int i = 0; i<code->variables_count; i++) {
+            print(num_to_str(var_types[i], 16));
+            print(":");
             print(num_to_str((int)variables[i], 10));
             print("; ");
         }
@@ -169,6 +185,8 @@ double js_run(void* bytecode, bool debug) {
 
         print("Stack: ");
         for (int i = 0; i<4; i++) {
+            print(num_to_str(stack_types[stack_ptr - i], 16));
+            print(":");
             print(num_to_str((int)stack[stack_ptr - i], 10));
             print("; ");
         }
