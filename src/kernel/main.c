@@ -165,8 +165,9 @@ void test_js() {
     for (int i=1; i>0; i++);
     clear();
 
-    js_run(code);
-    println("End of execution");
+    double result = js_run(code, false);
+    print("End of execution. Result = ");
+    println(num_to_str((int)result, 10));
 }
 
 void kmain() {
@@ -185,60 +186,38 @@ void kmain() {
 
     mem_init();
 
-    // struct MemGlobal mem_global;
-    // struct StateGlobal state_global;
-    // struct StateGlobal state_global_prev;
+    // test_print();
 
-    // state_global.symbol = 0;
-    // state_global.initialized = false;
+    // for (int i=1; i > 0; i++);
+    // for (int i=1; i > 0; i++);
+    // for (int i=1; i > 0; i++);
+    // clear();
 
-    // state_global_prev.symbol = 0;
-    // state_global_prev.initialized = false;
+    // test_numbers();
 
-    // while (1) {
-    //     sys_loop(&mem_global);
-    //     user_loop(&mem_global, &state_global, &state_global_prev);
+    // for (int i=1; i > 0; i++);
+    // for (int i=1; i > 0; i++);
+    // //for (int i=1; i > 0; i++);
+    // clear();
 
-    //     state_global_prev.symbol = state_global.symbol;
-    //     state_global_prev.initialized = state_global.initialized;
+    // test_kb();
 
-    //     u8 kc = mem_global.kbd_keycode;
-    //     print(SCREEN_WIDTH * 12, num_to_str(kc, 16));
-    //     print(SCREEN_WIDTH * 13, char_to_str(kbd_symbol(kc)));
-    // }
+    // //for (int i=1; i > 0; i++);
+    // clear();
 
-    test_print();
+    // test_mem();
 
-    for (int i=1; i > 0; i++);
-    for (int i=1; i > 0; i++);
-    for (int i=1; i > 0; i++);
-    clear();
+    // for (int i=1; i > 0; i++);
+    // for (int i=1; i > 0; i++);
+    // for (int i=1; i > 0; i++);
+    // //for (int i=1; i > 0; i++);
+    // clear();
 
-    test_numbers();
+    // test_disk();
 
-    for (int i=1; i > 0; i++);
-    for (int i=1; i > 0; i++);
-    //for (int i=1; i > 0; i++);
-    clear();
-
-    test_kb();
-
-    //for (int i=1; i > 0; i++);
-    clear();
-
-    test_mem();
-
-    for (int i=1; i > 0; i++);
-    for (int i=1; i > 0; i++);
-    for (int i=1; i > 0; i++);
-    //for (int i=1; i > 0; i++);
-    clear();
-
-    test_disk();
-
-    for (int i=1; i > 0; i++);
-    for (int i=1; i > 0; i++);
-    clear();
+    // for (int i=1; i > 0; i++);
+    // for (int i=1; i > 0; i++);
+    // clear();
 
     test_js();
 

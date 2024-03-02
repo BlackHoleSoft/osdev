@@ -192,6 +192,8 @@ class Parser {
             this.parseNode(node);
         });
 
+        this._result[0].push(['_ret_']);
+
         console.log('Variables:', this._variables);
         console.log('Functions:', this._functions);
 
@@ -243,8 +245,14 @@ class Parser {
                 byte.startsWith('#') ? [parseInt(byte.substring(1))] : [this._opcodes[byte]] 
                     : this.doubleToByteArray(byte)).flat();
                 return [...this.intToByteArray(rFlat.length), ...rFlat]
-            }).flat()
+            }).flat(),
+            0, 0, 0, 0
         ];
+
+        for (let i = bytes.length % 512; i < 512; i++) {
+            bytes.push(0);
+        }
+
         return bytes;
     }
 } 
