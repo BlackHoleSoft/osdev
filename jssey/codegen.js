@@ -1,4 +1,5 @@
 const acorn = require("acorn");
+const {v4} = require("uuid");
 
 class Parser {
 
@@ -18,7 +19,19 @@ class Parser {
         '-': 0x21,
         '*': 0x22,
         '/': 0x23,
-        '=': 0x40,        
+        '=': 0x40,   
+        
+        '<': 0x50,
+        '>': 0x51,
+        '<=': 0x52,
+        '>=': 0x53,
+        '==': 0x54,
+        '!=': 0x55,
+        
+        '_label_': 0xA0,
+        '_jmpnot_': 0xA1,
+        '_jmpif_': 0xA2,
+        '_jmp_': 0xA3,
     }
 
     _varTypes = {
@@ -29,11 +42,13 @@ class Parser {
         'pointer': 0x4,
     }
 
+    _labels = [];
     _namesDir = ['_'];
     _currentFunction = 0;
     _parseFns = {};
     _variables = [];
     _functions = ['main'];
+    _systemFunctions = [];
     _result = [
         [],  //main
     ];
@@ -51,6 +66,7 @@ class Parser {
             "FunctionDeclaration": this.parseFunctionDeclaration,
             "ReturnStatement": this.parseReturnStatement,
             "CallExpression": this.parseCallExpression,
+            "WhileStatement": this.parseWhileStatement,
         };
 
         this.addSystemFn('_print');
@@ -59,11 +75,13 @@ class Parser {
 
     addSystemFn(name) {
         this._result.push([]);
-        this._functions.push('_/' + name);
+        this._functions.push(name);
+        this._systemFunctions.push(name);
     }
 
     getVarName = (initial) => {
-        return [...this._namesDir, initial].join('/');
+        //return [...this._namesDir, initial].join('/');
+        return initial;
     }
 
     write = (items) => {
@@ -74,13 +92,38 @@ class Parser {
         this.write(['_mem_', bytes.length, ...bytes.map(b => '#'+b)]);
     }
 
+    addLabel(uuid) {
+        let lIndex = this._labels.length
+        this._labels.push(uuid);
+        this.write(['$'+uuid]);
+        return lIndex;
+    }
+
+    toLabelAddr(label) {
+        return '&'+label;
+    }
+
+    parseWhileStatement = ({test, body}) => {
+        let label1 = v4();
+        let label2 = v4();
+
+        this.write(['_jmp_', this.toLabelAddr(label2)]);
+        
+        this.addLabel(label1);
+        this.parseNode(body);
+        
+        this.addLabel(label2);
+        this.parseNode(test);
+        this.write(['_jmpif_', this.toLabelAddr(label1)]);
+    }
+
     parseReturnStatement = ({argument}) => {
         this.parseNode(argument);
         this.write(['_ret_']);
     }
 
     parseFunctionDeclaration = ({id, params, body}) => {
-        let fnName = this.getVarName(id.name);
+        let fnName = id.name;
         if (this._result[fnName])
             throw new Error("Function already exists: " + fnName);
 
@@ -103,7 +146,12 @@ class Parser {
     }
 
     parseCallExpression = ({callee, arguments: args}) => {
-        var fnName = this.getVarName(callee.name);
+        let isSystemFunction = this._systemFunctions.includes(callee.name);
+
+        // TODO: call functions inside block or other function
+
+
+        var fnName = callee.name;
         var fnIndex = this._functions.indexOf(fnName);
         if (fnIndex < 0)
             throw new Error("Function was not initialized: " + fnName);
@@ -247,21 +295,51 @@ class Parser {
         return Array.from(new Int8Array(buffer));  // reverse to get little endian
     }
 
-    getByteCode = () => {
+    getByteCode = () => {    
+        
+        let labels = {};
+        let codePtr = 2 + 2 + 4;
+
         let bytes = [
             // variables count
             ...this.shortToByteArray(this._variables.length),
             // functions count
             ...this.shortToByteArray(this._functions.length),
             // functions list
-            ...this._result.map(r => {
-                let rFlat = r.flat().map(byte => typeof byte === 'string' ? 
-                byte.startsWith('#') ? [parseInt(byte.substring(1))] : [this._opcodes[byte]] 
-                    : this.doubleToByteArray(byte)).flat();
-                return [...this.intToByteArray(rFlat.length), ...rFlat]
+            ...this._result.map(r => {                
+                let rFlat = r.flat().map(byte => {
+                    if (typeof byte === 'string') {
+                        if (byte.startsWith('#')) {
+                            codePtr += 1;
+                            return [parseInt(byte.substring(1))];
+                        } else if (byte.startsWith('$')) {
+                            // label declaration
+                            labels[byte.substring(1)] = codePtr;
+                            return [];
+                        } else if (byte.startsWith('&')) {
+                            // label address
+                            codePtr += 8;
+                            return byte;
+                        } else {
+                            codePtr += 1;
+                            return [this._opcodes[byte]];
+                        }
+                    } else {
+                        codePtr += 8;
+                        return this.doubleToByteArray(byte);
+                    }
+                }).flat();
+                return [...this.intToByteArray(codePtr - 4), ...rFlat]
             }).flat(),
             0, 0, 0, 0
         ];
+
+        bytes = bytes.map(b => {
+            if (typeof b === 'string' && b.startsWith('&')) {
+                return this.doubleToByteArray(labels[b.substring(1)]);
+            }
+            return [b];
+        }).flat();
 
         for (let i = bytes.length % 512; i < 512; i++) {
             bytes.push(0);

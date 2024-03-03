@@ -1,6 +1,5 @@
-let a = true;
-let b = 66;
-let c = "test";
-_print(c);
-_print(b);
-_print(a);
+let a = 5;
+while (a < 10) {
+    _print(a);
+    a = a + 1;
+}

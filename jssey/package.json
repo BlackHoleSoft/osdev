@@ -10,6 +10,7 @@
   "author": "Anton Kanashov",
   "license": "ISC",
   "dependencies": {
-    "acorn": "^8.11.3"
+    "acorn": "^8.11.3",
+    "uuid": "^9.0.1"
   }
 }

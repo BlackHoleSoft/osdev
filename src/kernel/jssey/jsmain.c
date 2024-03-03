@@ -9,6 +9,13 @@
 #define OPCODE_DIV 0x23
 #define OPCODE_SET 0x40
 
+#define OPCODE_LOWER 0x50
+#define OPCODE_GREATER 0x51
+#define OPCODE_LE 0x52
+#define OPCODE_GE 0x53
+#define OPCODE_EQ 0x54
+#define OPCODE_NOTEQ 0x55
+
 #define OPCODE_PUSH 0xa
 #define OPCODE_POP 0xb
 
@@ -17,6 +24,10 @@
 #define OPCODE_RET 0x5
 #define OPCODE_CALL 0x6
 #define OPCODE_MEM 0x7
+
+#define OPCODE_JMPNOT 0xA1
+#define OPCODE_JMPIF 0xA2
+#define OPCODE_JMP 0xA3
 
 #define VAR_TYPE_NUMBER 0x0
 #define VAR_TYPE_STRING 0x1
@@ -58,7 +69,7 @@ double js_run(void* bytecode, bool debug) {
     
     bool running = true;
     while(running) {
-        char value_u8 = code_pointer[0];
+        u8 value_u8 = code_pointer[0];
 
         if (debug) print("OPCODE: 0x");
         if (debug) print_colored(num_to_str(value_u8, 16), 0x4);
@@ -67,6 +78,60 @@ double js_run(void* bytecode, bool debug) {
 
         switch (value_u8)
         {
+            case OPCODE_JMP:
+                int local_addr = (int)*(double*)(code_pointer + 1);
+                code_pointer = (char*)code + local_addr;
+                break;
+
+            case OPCODE_JMPIF:
+                if ((int)stack[stack_ptr--]) {
+                    int local_addr = (int)*(double*)(code_pointer + 1);
+                    code_pointer = (char*)code + local_addr;
+                } else {
+                    code_pointer += 1 + 8 * 1;
+                }               
+                break;
+
+            case OPCODE_JMPNOT:
+                int expression = (int)stack[stack_ptr--];
+                if (!(int)stack[stack_ptr--]) {
+                    int local_addr = (int)*(double*)(code_pointer + 1);
+                    code_pointer = (char*)code + local_addr;
+                } else {
+                    code_pointer += 1 + 8 * 1;
+                }               
+                break;
+
+            case OPCODE_LOWER:
+                stack[++stack_ptr] = stack[stack_ptr--] > stack[stack_ptr--];
+                code_pointer += 1 + 8 * 0;
+                break;
+
+            case OPCODE_GREATER:
+                stack[++stack_ptr] = stack[stack_ptr--] < stack[stack_ptr--];
+                code_pointer += 1 + 8 * 0;
+                break;
+
+            case OPCODE_LE:
+                stack[++stack_ptr] = stack[stack_ptr--] >= stack[stack_ptr--];
+                code_pointer += 1 + 8 * 0;
+                break;
+
+            case OPCODE_GE:
+                stack[++stack_ptr] = stack[stack_ptr--] <= stack[stack_ptr--];
+                code_pointer += 1 + 8 * 0;
+                break;
+
+            case OPCODE_EQ:
+                stack[++stack_ptr] = stack[stack_ptr--] == stack[stack_ptr--];
+                code_pointer += 1 + 8 * 0;
+                break;
+
+            case OPCODE_NOTEQ:
+                stack[++stack_ptr] = stack[stack_ptr--] != stack[stack_ptr--];
+                code_pointer += 1 + 8 * 0;
+                break;
+
             case OPCODE_PUSH:
                 stack_types[stack_ptr + 1] = code_pointer[1];
                 stack[++stack_ptr] = *(double*)(code_pointer + 2);
