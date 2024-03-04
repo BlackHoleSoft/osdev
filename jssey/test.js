@@ -1,16 +1,37 @@
-function pow(v, p) {
-    let result = v;
-    for (let i = 1; i < p; i = i + 1) {
-        result = result * v;
-    }
-    return result;
+let a = 4;
+if (a > 3) {
+    a = a + 10; 
 }
+_print(a);
 
-function getCylynderVolume(r, h) {
-    return 3.14 * pow(r, 2) * h;
+let b = 3;
+if (b > 100) {
+    b = 1000;
 }
+_print(b);
 
-_print("Engine volume in cm3:");
-_print(getCylynderVolume(56, 50) * 4 / 1000);
+let c = 6;
+if (c == 6) {
+    c = c * 10;
+} else {
+    c = 1;
+}
+_print(c);
 
+let d = 7;
+if (d < 0) {
+    d = 1;
+} else if (d > 5) {
+    d = 100;
+} else {
+    d = 1000;
+}
+_print(d);
 
+let e = 30;
+if (e > 10) {
+    e = e * e;
+} else if (e < 0) {
+    e = 80;
+}
+_print(e);

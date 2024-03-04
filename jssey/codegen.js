@@ -68,6 +68,7 @@ class Parser {
             "CallExpression": this.parseCallExpression,
             "WhileStatement": this.parseWhileStatement,
             "ForStatement": this.parseForStatement,
+            "IfStatement": this.parseIfStatement,
         };
 
         this.addSystemFn('_print');
@@ -102,6 +103,22 @@ class Parser {
 
     toLabelAddr(label) {
         return '&'+label;
+    }
+
+    parseIfStatement = ({test, consequent, alternate}) => {
+        let label1 = v4();
+        let label2 = v4();
+
+        this.parseNode(test);
+        this.write(['_jmpnot_', this.toLabelAddr(label1)]);
+
+        this.parseNode(consequent);
+        this.write(['_jmp_', this.toLabelAddr(label2)]);
+
+        this.addLabel(label1);
+        if (alternate) this.parseNode(alternate);
+        
+        this.addLabel(label2);
     }
 
     parseWhileStatement = ({test, body}) => {

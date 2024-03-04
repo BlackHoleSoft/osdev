@@ -154,8 +154,8 @@ void test_disk() {
 }
 
 void test_js() {
-    string code = mem_512();
-    ata_read_sectors(code, 0x4, 1);
+    string code = mem_10kb();
+    ata_read_sectors(code, 0x4, 16);
 
     for (int i = 0; i<512; i++) {
         print(char_to_str(code[i]));

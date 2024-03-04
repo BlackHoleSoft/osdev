@@ -93,8 +93,7 @@ double js_run(void* bytecode, bool debug) {
                 break;
 
             case OPCODE_JMPNOT:
-                int expression = (int)stack[stack_ptr--];
-                if (!(int)stack[stack_ptr--]) {
+                if ((int)stack[stack_ptr--] == 0) {
                     int local_addr = (int)*(double*)(code_pointer + 1);
                     code_pointer = (char*)code + local_addr;
                 } else {
