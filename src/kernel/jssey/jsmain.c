@@ -9,6 +9,9 @@
 #define OPCODE_DIV 0x23
 #define OPCODE_SET 0x40
 
+#define OPCODE_PROPGET 0x10
+#define OPCODE_PROPSET 0x11
+
 #define OPCODE_LOWER 0x50
 #define OPCODE_GREATER 0x51
 #define OPCODE_LE 0x52
@@ -18,12 +21,14 @@
 
 #define OPCODE_PUSH 0xa
 #define OPCODE_POP 0xb
+#define OPCODE_STACKCPY 0xc
 
 #define OPCODE_VAR 0x3
 #define OPCODE_GETVAR 0x4
 #define OPCODE_RET 0x5
 #define OPCODE_CALL 0x6
 #define OPCODE_MEM 0x7
+#define OPCODE_MEMUPD 0x8
 
 #define OPCODE_JMPNOT 0xA1
 #define OPCODE_JMPIF 0xA2
@@ -35,6 +40,7 @@
 #define VAR_TYPE_OBJECT 0x3
 #define VAR_TYPE_POINTER 0x4
 
+#define PROP_NAME_LENGTH 16
 #define SYS_FNS_COUNT 2     // main, etc...
 
 struct ByteCode {
@@ -57,7 +63,7 @@ double js_run(void* bytecode, bool debug) {
     char* stack_types = mem_10kb();
     int stack_ptr = -1;
     int call_stack_pointer = -1;
-    int memory_pointer;
+    int memory_pointer = 0;
 
     struct ByteCode* code = (struct ByteCode*)bytecode;
     char* fn_main_ptr = (char*)&code->functions;
@@ -99,6 +105,26 @@ double js_run(void* bytecode, bool debug) {
                 } else {
                     code_pointer += 1 + 8 * 1;
                 }               
+                break;
+            
+            case OPCODE_PROPGET:
+                char* prop_name = memory + (int)stack[stack_ptr--];
+                char* obj = memory + (int)stack[stack_ptr--];
+                for (int i = 0; i < *(int*)obj; i++) {
+                    int offset = 4 + i * (PROP_NAME_LENGTH + 1 + 4);
+                    string pname = obj + offset;
+                    bool eq = true;
+                    for (int j=0; prop_name[j] > 0; j++) {
+                        eq = eq && prop_name[j] == pname[j];
+                    }
+                    if (eq) {
+                        // load var value to the stack
+                        int var_index = *(int*)(obj + offset + PROP_NAME_LENGTH + 1);
+                        stack_types[stack_ptr + 1] = var_types[var_index];
+                        stack[++stack_ptr] = variables[var_index];
+                    }
+                }
+                code_pointer += 1;
                 break;
 
             case OPCODE_LOWER:

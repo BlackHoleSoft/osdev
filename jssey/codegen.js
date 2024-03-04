@@ -10,10 +10,15 @@ class Parser {
         '_getvar_': 0x4,
         '_ret_': 0x5,
         '_call_': 0x6,
-        '_mem_': 0x7,   // copy bytes to the memory and push address to stack
+        '_mem_': 0x7,       // copy bytes to the memory and push address to stack
+        // '_memupd_': 0x8,    // copy value from stack to the memory at address specified in stack [..., addr, value]
         
         '_push_': 0xa,
         '_pop_': 0xb,
+        // '_stackcpy_': 0xc,  // clone last value in stack
+
+        '_propget_': 0x10,      // push value of property to the stack, gets from stack addr of objct and addr of prop name
+        '_propset_': 0x11,
 
         '+': 0x20,
         '-': 0x21,
@@ -69,6 +74,8 @@ class Parser {
             "WhileStatement": this.parseWhileStatement,
             "ForStatement": this.parseForStatement,
             "IfStatement": this.parseIfStatement,
+            "ObjectExpression": this.parseObjectExpression,
+            "MemberExpression": this.parseMemberExpression,
         };
 
         this.addSystemFn('_print');
@@ -92,7 +99,7 @@ class Parser {
 
     addToMemory = (bytes) => {
         this.write(['_mem_', bytes.length, ...bytes.map(b => '#'+b)]);
-    }
+    }    
 
     addLabel(uuid) {
         let lIndex = this._labels.length
@@ -103,6 +110,39 @@ class Parser {
 
     toLabelAddr(label) {
         return '&'+label;
+    }
+
+    parseObjectExpression = ({properties}) => {
+        let maxPropNameLength = 16;
+        let objId = v4();
+
+        let bytes = [...this.intToByteArray(properties.length)];
+        properties.forEach((p) => {
+            // create vars for each property
+            let varIndex = this.createVariable(p.value, {
+                name: objId + '.' + p.key.name
+            });
+
+            let name = p.key.name.split('').map(c => c.charCodeAt(0));
+            if (name.length > maxPropNameLength)
+                throw new Error("Property name too long!");
+            for (let i = name.length; i < maxPropNameLength; i++) {
+                name.push(0);
+            }
+            
+            bytes.push(...[...name, 0 /* type (reserved) */, ...this.intToByteArray(varIndex)]);
+        });
+        this.addToMemory(bytes);
+
+        // at the end of execution stack contains address of the object in memory
+    }
+
+    parseMemberExpression = ({object, property}) => {
+        this.parseNode(object);
+        this.addToMemory([...property.name.split('').map(c => c.charCodeAt(0)), 0]);
+        // now stack contains address of the object and address of prop name
+
+        this.write(['_propget_'])
     }
 
     parseIfStatement = ({test, consequent, alternate}) => {
@@ -208,6 +248,7 @@ class Parser {
     parseLiteral = ({value}) => {
         if (typeof value === 'string') {
             let bytes = value.split('').map(c => c.charCodeAt(0) & 0xFF);
+            bytes.push(0);
             this.addToMemory(bytes);
         } else {
             this.write(['_push_', '#' + (this._varTypes[typeof value] || 0), +value]);
@@ -264,8 +305,8 @@ class Parser {
         declarations.forEach(d => this.parseNode(d));
     }
 
-    parseVariableDeclarator = ({init, id}) => {
-        let varName = this.getVarName(id.name);
+    createVariable = (init, identifier) => {
+        let varName = this.getVarName(identifier.name);
 
         this.parseNode(init);
 
@@ -273,6 +314,12 @@ class Parser {
         this._variables.push(varName);
 
         this.write(["_var_", index]);
+
+        return index;
+    }
+
+    parseVariableDeclarator = ({init, id}) => {
+        this.createVariable(init, id);
     }
     
     parseNode = (node) => {
