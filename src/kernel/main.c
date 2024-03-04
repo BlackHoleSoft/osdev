@@ -165,7 +165,7 @@ void test_js() {
     for (int i=1; i>0; i++);
     clear();
 
-    double result = js_run(code, true);
+    double result = js_run(code, false);
     print("End of execution. Result = ");
     println(num_to_str((int)result, 10));
     print("Used memory: ");

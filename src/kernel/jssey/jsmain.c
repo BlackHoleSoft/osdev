@@ -108,24 +108,50 @@ double js_run(void* bytecode, bool debug) {
                 break;
             
             case OPCODE_PROPGET:
-                char* prop_name = memory + (int)stack[stack_ptr--];
-                char* obj = memory + (int)stack[stack_ptr--];
-                for (int i = 0; i < *(int*)obj; i++) {
-                    int offset = 4 + i * (PROP_NAME_LENGTH + 1 + 4);
-                    string pname = obj + offset;
-                    bool eq = true;
-                    for (int j=0; prop_name[j] > 0; j++) {
-                        eq = eq && prop_name[j] == pname[j];
+                {
+                    char* prop_name = memory + (int)stack[stack_ptr--];
+                    char* obj = memory + (int)stack[stack_ptr--];
+                    for (int i = 0; i < *(int*)obj; i++) {
+                        int offset = 4 + i * (PROP_NAME_LENGTH + 1 + 4);
+                        string pname = obj + offset;
+                        bool eq = true;
+                        for (int j=0; prop_name[j] > 0; j++) {
+                            eq = eq && prop_name[j] == pname[j];
+                        }
+                        if (eq) {
+                            // load var value to the stack
+                            int var_index = *(int*)(obj + offset + PROP_NAME_LENGTH + 1);
+                            stack_types[stack_ptr + 1] = var_types[var_index];
+                            stack[++stack_ptr] = variables[var_index];
+                        }
                     }
-                    if (eq) {
-                        // load var value to the stack
-                        int var_index = *(int*)(obj + offset + PROP_NAME_LENGTH + 1);
-                        stack_types[stack_ptr + 1] = var_types[var_index];
-                        stack[++stack_ptr] = variables[var_index];
-                    }
+                    code_pointer += 1;
+                    break;
                 }
-                code_pointer += 1;
-                break;
+            
+            case OPCODE_PROPSET:
+                {
+                    double prop_new_value = stack[stack_ptr];
+                    char prop_new_type = (char)stack_types[stack_ptr--];
+                    char* prop_name = memory + (int)stack[stack_ptr--];
+                    char* obj = memory + (int)stack[stack_ptr--];
+                    for (int i = 0; i < *(int*)obj; i++) {
+                        int offset = 4 + i * (PROP_NAME_LENGTH + 1 + 4);
+                        string pname = obj + offset;
+                        bool eq = true;
+                        for (int j=0; prop_name[j] > 0; j++) {
+                            eq = eq && prop_name[j] == pname[j];
+                        }
+                        if (eq) {
+                            // load var value to the stack
+                            int var_index = *(int*)(obj + offset + PROP_NAME_LENGTH + 1);
+                            var_types[var_index] = prop_new_type;
+                            variables[var_index] = prop_new_value;
+                        }
+                    }
+                    code_pointer += 1;
+                    break;
+                }
 
             case OPCODE_LOWER:
                 stack[++stack_ptr] = stack[stack_ptr--] > stack[stack_ptr--];

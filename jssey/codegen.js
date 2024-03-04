@@ -18,7 +18,7 @@ class Parser {
         // '_stackcpy_': 0xc,  // clone last value in stack
 
         '_propget_': 0x10,      // push value of property to the stack, gets from stack addr of objct and addr of prop name
-        '_propset_': 0x11,
+        '_propset_': 0x11,      // gets from stack value, addr of objct and addr of prop name then updates variable
 
         '+': 0x20,
         '-': 0x21,
@@ -137,9 +137,13 @@ class Parser {
         // at the end of execution stack contains address of the object in memory
     }
 
-    parseMemberExpression = ({object, property}) => {
+    prepareMember = ({object, property}) => {
         this.parseNode(object);
         this.addToMemory([...property.name.split('').map(c => c.charCodeAt(0)), 0]);
+    }
+
+    parseMemberExpression = ({object, property}) => {
+        this.prepareMember({object, property});
         // now stack contains address of the object and address of prop name
 
         this.write(['_propget_'])
@@ -287,6 +291,17 @@ class Parser {
     }
 
     parseAssignmentExpression = ({operator, left, right}) => {
+        if (left.type === 'MemberExpression') {
+            if (operator === '=') {
+                this.prepareMember(left);
+                this.parseNode(right);
+                this.write(['_propset_']);
+            } else {
+                throw new Error("Invalid assignment operator: ", operator);
+            }
+            return;
+        }
+
         if (operator === '=') {
             let varName = this.getVarName(left.name);
             let varIndex = this._variables.indexOf(varName);
