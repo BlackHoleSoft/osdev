@@ -168,6 +168,8 @@ void test_js() {
     double result = js_run(code, false);
     print("End of execution. Result = ");
     println(num_to_str((int)result, 10));
+    print("Used memory: ");
+    println(num_to_str(mem_get_overall_used(), 10));
 }
 
 void kmain() {

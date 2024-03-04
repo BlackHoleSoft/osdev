@@ -67,6 +67,7 @@ class Parser {
             "ReturnStatement": this.parseReturnStatement,
             "CallExpression": this.parseCallExpression,
             "WhileStatement": this.parseWhileStatement,
+            "ForStatement": this.parseForStatement,
         };
 
         this.addSystemFn('_print');
@@ -81,7 +82,7 @@ class Parser {
 
     getVarName = (initial) => {
         //return [...this._namesDir, initial].join('/');
-        return initial;
+        return this._currentFunction + '__' + initial;
     }
 
     write = (items) => {
@@ -117,6 +118,22 @@ class Parser {
         this.write(['_jmpif_', this.toLabelAddr(label1)]);
     }
 
+    parseForStatement = ({test, init, update, body}) => {
+        let label1 = v4();
+        let label2 = v4();
+
+        this.parseNode(init);
+        this.write(['_jmp_', this.toLabelAddr(label2)]);
+        
+        this.addLabel(label1);
+        this.parseNode(body);
+        this.parseNode(update);
+        
+        this.addLabel(label2);
+        this.parseNode(test);
+        this.write(['_jmpif_', this.toLabelAddr(label1)]);
+    }
+
     parseReturnStatement = ({argument}) => {
         this.parseNode(argument);
         this.write(['_ret_']);
@@ -135,7 +152,7 @@ class Parser {
 
         [...params].reverse().forEach(p => {
             let index = this._variables.length;
-            let varName = [...this._namesDir, `fn${fnIndex}_block`, p.name].join('/');
+            let varName = this.getVarName(p.name);
             this._variables.push(varName);
             this.write(['_var_', index]);
         });        
@@ -298,7 +315,8 @@ class Parser {
     getByteCode = () => {    
         
         let labels = {};
-        let codePtr = 2 + 2 + 4;
+        let codePtr = 2 + 2;
+        let startFnPtr = codePtr;
 
         let bytes = [
             // variables count
@@ -306,7 +324,9 @@ class Parser {
             // functions count
             ...this.shortToByteArray(this._functions.length),
             // functions list
-            ...this._result.map(r => {                
+            ...this._result.map(r => {
+                codePtr += 4;
+                startFnPtr = codePtr;            
                 let rFlat = r.flat().map(byte => {
                     if (typeof byte === 'string') {
                         if (byte.startsWith('#')) {
@@ -329,7 +349,7 @@ class Parser {
                         return this.doubleToByteArray(byte);
                     }
                 }).flat();
-                return [...this.intToByteArray(codePtr - 4), ...rFlat]
+                return [...this.intToByteArray(codePtr - startFnPtr), ...rFlat]
             }).flat(),
             0, 0, 0, 0
         ];

@@ -49,12 +49,12 @@ void sys_print(char* str) {
 }
 
 double js_run(void* bytecode, bool debug) {
-    string memory = mem_512();
-    double* variables = mem_512();
-    double* stack = mem_512();
-    char** call_stack = mem_512();
-    char* var_types = mem_512();
-    char* stack_types = mem_512();
+    string memory = mem_10kb();
+    double* variables = mem_10kb();
+    double* stack = mem_10kb();
+    char** call_stack = mem_10kb();
+    char* var_types = mem_10kb();
+    char* stack_types = mem_10kb();
     int stack_ptr = -1;
     int call_stack_pointer = -1;
     int memory_pointer;
