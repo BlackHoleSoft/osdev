@@ -18,6 +18,8 @@ struct MemoryTablesList {
     struct MemoryTable* first;
     int count;
     int vga_offset;
+    u8 kbd_keycode;
+    void* process_list;
 };
 
 int mem_get_size();

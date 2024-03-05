@@ -18,29 +18,49 @@ struct StateGlobal {
     bool initialized;
 };
 
-void user_loop(struct MemGlobal* mem, struct StateGlobal* state, struct StateGlobal* prev) {
+void user_init() {
+    struct MemoryTablesList* mem = (struct MemoryTablesList*)MEM_DATA_ADDR;
 
-    // logic    
+    clear();
 
-    if (state->initialized == false) {
-        state->symbol = kbd_symbol(mem->kbd_keycode);
+    string code = mem_10kb();
+    ata_read_sectors(code, 0x4, 16);
 
-        if (prev->symbol != state->symbol) {
-            state->initialized = true;
-        }
-    }    
+    struct JsseyState** process_list = mem_10kb();
 
-    //render
+    struct JsseyState* main_process_state = mem_512();
+    process_list[0] = main_process_state;
+    mem->process_list = process_list;
 
-    if (state->initialized == false) {
-        println("Enter:");
-    } else {        
-        //print(SCREEN_WIDTH * 6, "Symbol:");
-        println(char_to_str(state->symbol));
-    }
+    // Run main process
+    main_process_state->is_initialized = false;
+    main_process_state->is_running = false;
+    main_process_state->is_finished = false;
+    js_run(code, main_process_state, 10, false);
+    
 }
 
-void sys_loop(struct MemGlobal* mem) {
+void user_loop() {
+    struct MemoryTablesList* mem = (struct MemoryTablesList*)MEM_DATA_ADDR;
+    char keyboard_symbol = kbd_symbol(mem->kbd_keycode);
+    struct JsseyState* state = ((struct JsseyState**)(mem->process_list))[0];
+
+    //println(num_to_str((int)state->code, 16));
+
+    if (state->is_finished == false)
+        js_run(NULL, state, 10, false);
+
+    if (state->is_running == false && state->is_finished == false) {
+        state->is_finished = true;
+        print("Process 0 exit: ");
+        println(num_to_str((int)state->result, 10));
+    }
+
+}
+
+void sys_loop() {
+    struct MemoryTablesList* mem = (struct MemoryTablesList*)MEM_DATA_ADDR;
+
     mem->kbd_keycode = kbd_keycode();
 }
 
@@ -154,6 +174,9 @@ void test_disk() {
 }
 
 void test_js() {
+    struct MemoryTablesList* mem = (struct MemoryTablesList*)MEM_DATA_ADDR;
+    struct JsseyState* state = ((struct JsseyState**)(mem->process_list))[0];
+
     string code = mem_10kb();
     ata_read_sectors(code, 0x4, 16);
 
@@ -165,7 +188,7 @@ void test_js() {
     for (int i=1; i>0; i++);
     clear();
 
-    double result = js_run(code, false);
+    double result = js_run(code, state, 1000000000, true);
     print("End of execution. Result = ");
     println(num_to_str((int)result, 10));
     print("Used memory: ");
@@ -187,6 +210,17 @@ void kmain() {
     // print(SCREEN_WIDTH * 2 + 18, memsize > 0 ? num_to_str(memsize / 1024 / 1024, 10) : ">=4Gb");
 
     mem_init();
+
+    user_init();
+
+    while (true) {
+        sys_loop();
+        user_loop();
+    }
+
+    ////////////////////////////////////////////////////////////////
+    // TESTS
+    ////////////////////////////////////////////////////////////////
 
     // test_print();
 
@@ -221,9 +255,9 @@ void kmain() {
     // for (int i=1; i > 0; i++);
     // clear();
 
-    test_js();
+    // test_js();
 
-    println("");
-    println("End of tests");
+    // println("");
+    // println("End of tests");
 
 }
