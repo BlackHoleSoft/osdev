@@ -34,22 +34,64 @@
 #define OPCODE_JMPIF 0xA2
 #define OPCODE_JMP 0xA3
 
-#define VAR_TYPE_NUMBER 0x0
-#define VAR_TYPE_STRING 0x1
-#define VAR_TYPE_BOOL 0x2
-#define VAR_TYPE_OBJECT 0x3
-#define VAR_TYPE_POINTER 0x4
-
 #define PROP_NAME_LENGTH 16
-#define SYS_FNS_COUNT 2     // main, etc...
+#define SYS_FNS_COUNT 4     // main, etc...
+
+#define ERROR_OUT_OF_MEMORY 0x100
 
 
-
+// 1
 void sys_print(char* str) {    
     print_colored(str, 0x3);
 }
 
+// 2
+void sys_print_position(int x, int y) {    
+    print_position(x, y);
+}
+
+// 3
+void sys_wait(double ticks) {
+    for (double i = 0; i < ticks; i++);
+}
+
+void js_propset(struct JsseyState* state, string prop_name, char* obj, double value, char type) {
+    for (int i = 0; i < *(int*)obj; i++) {
+        int offset = 4 + i * (PROP_NAME_LENGTH + 1 + 4);
+        string pname = obj + offset;
+        bool eq = true;
+        for (int j=0; prop_name[j] > 0; j++) {
+            eq = eq && prop_name[j] == pname[j];
+        }
+        if (eq) {
+            // load var value to the stack
+            int var_index = *(int*)(obj + offset + PROP_NAME_LENGTH + 1);
+            state->var_types[var_index] = type;
+            state->variables[var_index] = value;
+        }
+    }
+}
+
+void js_propget(struct JsseyState* state, string prop_name, char* obj, double* out_value, u8* out_type) {
+    for (int i = 0; i < *(int*)obj; i++) {
+        int offset = 4 + i * (PROP_NAME_LENGTH + 1 + 4);
+        string pname = obj + offset;
+        bool eq = true;
+        for (int j=0; prop_name[j] > 0; j++) {
+            eq = eq && prop_name[j] == pname[j];
+        }
+        if (eq) {
+            // load var value to the stack
+            int var_index = *(int*)(obj + offset + PROP_NAME_LENGTH + 1);
+            *out_type = state->var_types[var_index];
+            *out_value = state->variables[var_index];
+        }
+    }
+}
+
 double js_run(void* bytecode, struct JsseyState* state, int instructions_cnt, bool debug) {
+    int memory_size = 10 * 1024;
+
     if (state->is_initialized == false) {
         state->memory = mem_10kb();
         state->variables = mem_10kb();
@@ -111,20 +153,8 @@ double js_run(void* bytecode, struct JsseyState* state, int instructions_cnt, bo
                 {
                     char* prop_name = state->memory + (int)state->stack[state->stack_ptr--];
                     char* obj = state->memory + (int)state->stack[state->stack_ptr--];
-                    for (int i = 0; i < *(int*)obj; i++) {
-                        int offset = 4 + i * (PROP_NAME_LENGTH + 1 + 4);
-                        string pname = obj + offset;
-                        bool eq = true;
-                        for (int j=0; prop_name[j] > 0; j++) {
-                            eq = eq && prop_name[j] == pname[j];
-                        }
-                        if (eq) {
-                            // load var value to the stack
-                            int var_index = *(int*)(obj + offset + PROP_NAME_LENGTH + 1);
-                            state->stack_types[state->stack_ptr + 1] = state->var_types[var_index];
-                            state->stack[++state->stack_ptr] = state->variables[var_index];
-                        }
-                    }
+                    js_propget(state, prop_name, obj, &state->stack[state->stack_ptr + 1], &state->stack_types[state->stack_ptr + 1]);
+                    state->stack_ptr++;
                     state->code_pointer += 1;
                     break;
                 }
@@ -135,20 +165,7 @@ double js_run(void* bytecode, struct JsseyState* state, int instructions_cnt, bo
                     char prop_new_type = (char)state->stack_types[state->stack_ptr--];
                     char* prop_name = state->memory + (int)state->stack[state->stack_ptr--];
                     char* obj = state->memory + (int)state->stack[state->stack_ptr--];
-                    for (int i = 0; i < *(int*)obj; i++) {
-                        int offset = 4 + i * (PROP_NAME_LENGTH + 1 + 4);
-                        string pname = obj + offset;
-                        bool eq = true;
-                        for (int j=0; prop_name[j] > 0; j++) {
-                            eq = eq && prop_name[j] == pname[j];
-                        }
-                        if (eq) {
-                            // load var value to the stack
-                            int var_index = *(int*)(obj + offset + PROP_NAME_LENGTH + 1);
-                            state->var_types[var_index] = prop_new_type;
-                            state->variables[var_index] = prop_new_value;
-                        }
-                    }
+                    js_propset(state, prop_name, obj, prop_new_value, prop_new_type);
                     state->code_pointer += 1;
                     break;
                 }
@@ -217,6 +234,13 @@ double js_run(void* bytecode, struct JsseyState* state, int instructions_cnt, bo
                                 num_to_str((int)state->stack[state->stack_ptr], 10) : state->memory + (int)(state->stack[state->stack_ptr]));
                             state->stack_ptr--;
                             break;
+                        case 2:
+                            sys_print_position((int)state->stack[state->stack_ptr - 1], (int)state->stack[state->stack_ptr]);
+                            state->stack_ptr -= 2;
+                            break;
+                        case 3:
+                            sys_wait(state->stack[state->stack_ptr--]);
+                            break;
                     }
                     state->code_pointer += 1 + 8 * 1;
                     break;
@@ -243,6 +267,13 @@ double js_run(void* bytecode, struct JsseyState* state, int instructions_cnt, bo
                 break;
             
             case OPCODE_MEM:
+                if (state->memory_pointer >= memory_size) {
+                    print_colored("Out of memory!\n", 0x4);
+                    state->is_running = false;
+                    state->error = ERROR_OUT_OF_MEMORY;
+                    break;
+                }
+
                 int mlen = (int)*(double*)(state->code_pointer + 1);
                 for (int i=0; i<mlen; i++) {
                     state->memory[state->memory_pointer + i] = *(state->code_pointer + 1 + 8 * 1 + i);

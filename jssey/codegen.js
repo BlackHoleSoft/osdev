@@ -78,7 +78,9 @@ class Parser {
             "MemberExpression": this.parseMemberExpression,
         };
 
-        this.addSystemFn('_print');
+        this.addSystemFn('_print');                         // 1    _print(str)
+        this.addSystemFn('_printPosition');                 // 2    _printPosition(x, y)
+        this.addSystemFn('_wait');                          // 3    _wait(ticks)
         this.addSystemFn('_toString');
     }
 
@@ -91,6 +93,15 @@ class Parser {
     getVarName = (initial) => {
         //return [...this._namesDir, initial].join('/');
         return this._currentFunction + '__' + initial;
+    }
+
+    getVarIndex = (initialName) => {
+        let varName = this.getVarName(initialName);
+        let varIndex = this._variables.indexOf(varName);
+        if (varIndex < 0) {
+            varIndex = this._variables.indexOf('0__' + initialName);
+        }
+        return varIndex;
     }
 
     write = (items) => {
@@ -219,6 +230,10 @@ class Parser {
         });        
 
         this.parseNode(body);
+        let fnCode = this._result[fnIndex];
+        if (fnCode[fnCode.length - 1][0] !== '_ret_') {
+            this.write(['_ret_']);
+        }
 
         this._currentFunction = prevFn;
     }
@@ -259,9 +274,8 @@ class Parser {
         }
     }
 
-    parseIdentifier = ({name}) => {
-        let varName = this.getVarName(name);
-        let varIndex = this._variables.indexOf(varName);
+    parseIdentifier = ({name}) => {        
+        let varIndex = this.getVarIndex(name);
 
         if (varIndex < 0)
             throw new Error('Variable was not initialized: ' + varName)

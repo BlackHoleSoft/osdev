@@ -4,7 +4,9 @@ const fs = require('fs');
 const args = process.argv;
 const filename = args[2];
 
-const code = fs.readFileSync(filename, 'utf8');
+const initCode = fs.readFileSync('./init.js', 'utf8');
+const code = initCode + '\n' + fs.readFileSync(filename, 'utf8');
+
 
 const codegen = new Codegen();
 const bytecode = codegen.generate(code);

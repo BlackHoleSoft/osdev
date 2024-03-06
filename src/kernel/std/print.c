@@ -19,6 +19,12 @@ void clear() {
     }
 }
 
+void print_position(int x, int y) {
+    struct MemoryTablesList* data = (struct MemoryTablesList*)MEM_DATA_ADDR;
+
+    data->vga_offset = y * SCREEN_WIDTH + x;
+}
+
 int print_at(int offset, string str, u8 color) {
     char* vid = (char*)0xb8000;
 
