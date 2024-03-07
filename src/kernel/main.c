@@ -46,15 +46,15 @@ void user_loop() {
     struct JsseyState* state = ((struct JsseyState**)(mem->process_list))[0];
 
     // update state for each process
-    // js_propset(state, "keycode", state->memory + 0, (double)mem->kbd_keycode, VAR_TYPE_NUMBER);
-    // double char_address = 0;
-    // u8 char_type = VAR_TYPE_POINTER;
-    // js_propget(state, "keyChar", state->memory + 2, &char_address, &char_type);
-    // *(char*)(state->memory + (int)char_address) = keyboard_symbol;
+    js_propset(state, "keycode", state->memory + 0, (double)mem->kbd_keycode, VAR_TYPE_NUMBER);
+    double char_address = 0;
+    u8 char_type = VAR_TYPE_POINTER;
+    js_propget(state, "keyChar", state->memory + 2, &char_address, &char_type);
+    *(char*)(state->memory + (int)char_address) = keyboard_symbol;
 
     // run a piece of code for each process
     if (state->is_finished == false)
-        js_run(NULL, state, 10, false);
+        js_run(NULL, state, 20, false);
 
     if (state->is_running == false && state->is_finished == false) {
         state->is_finished = true;

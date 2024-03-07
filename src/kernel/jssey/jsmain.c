@@ -55,6 +55,34 @@ void sys_wait(double ticks) {
     for (double i = 0; i < ticks; i++);
 }
 
+void gc(struct JsseyState* state) {
+    for (int i = 0; i < state->memory_size; i += 512) {
+        int index = i / 512;
+        state->used_memory[index] = false;
+    }
+
+    for (int i = 0; i < state->vars_count; i++) {        
+        if (state->var_types[i] == VAR_TYPE_POINTER) {
+            int value = (int)state->variables[i];
+            state->used_memory[value / 512] = true;
+        }
+    }
+
+    for (int i = 0; i < state->stack_ptr; i++) {        
+        if (state->stack_types[i] == VAR_TYPE_POINTER) {
+            int value = (int)state->stack[i];
+            state->used_memory[value / 512] = true;
+        }
+    }
+
+    for (int i = 0; i < state->memory_size; i += 512) {
+        int index = i / 512;
+        if (state->used_memory[index] == false) {
+            state->memory_pointer = i;
+        }
+    }
+}
+
 void js_propset(struct JsseyState* state, string prop_name, char* obj, double value, char type) {
     for (int i = 0; i < *(int*)obj; i++) {
         int offset = 4 + i * (PROP_NAME_LENGTH + 1 + 4);
@@ -90,10 +118,16 @@ void js_propget(struct JsseyState* state, string prop_name, char* obj, double* o
 }
 
 double js_run(void* bytecode, struct JsseyState* state, int instructions_cnt, bool debug) {
-    int memory_size = 10 * 1024;
-
+    int mem_size = 10 * 1024;
     if (state->is_initialized == false) {
-        state->memory = mem_10kb();
+        state->used_memory = mem_10kb();
+        state->memory = mem_512();
+
+        for (int i=0; i<mem_size; i += 512) {
+            mem_512();
+            state->used_memory[i / 512] = false;
+        }
+
         state->variables = mem_10kb();
         state->stack = mem_10kb();
         state->call_stack = mem_10kb();
@@ -102,11 +136,14 @@ double js_run(void* bytecode, struct JsseyState* state, int instructions_cnt, bo
         state->stack_ptr = -1;
         state->call_stack_pointer = -1;
         state->memory_pointer = 0;
+        state->memory_size = mem_size;
 
         state->code = (struct ByteCode*)bytecode;
         state->fn_main_ptr = (char*)&state->code->functions;
         state->code_pointer = state->fn_main_ptr + 4;
         state->main_length = *(int*)state->fn_main_ptr;
+        state->vars_count = *(int*)bytecode;
+
 
         state->is_running = true;
         state->is_initialized = true;
@@ -212,10 +249,19 @@ double js_run(void* bytecode, struct JsseyState* state, int instructions_cnt, bo
                 break;
 
             case OPCODE_VAR:
-                state->var_types[(int)*(double*)(state->code_pointer + 1)] = state->stack_types[state->stack_ptr];
-                state->variables[(int)*(double*)(state->code_pointer + 1)] = state->stack[state->stack_ptr--];
+            {
+                u8 type = state->stack_types[state->stack_ptr];
+                double value = state->stack[state->stack_ptr--];
+
+                if (type == VAR_TYPE_POINTER) {
+                    state->used_memory[(int)(value / 512)] = true;
+                }
+
+                state->var_types[(int)*(double*)(state->code_pointer + 1)] = type;
+                state->variables[(int)*(double*)(state->code_pointer + 1)] = value;
                 state->code_pointer += 1 + 8 * 1;
                 break;
+            }
 
             case OPCODE_GETVAR:
                 state->stack_types[state->stack_ptr + 1] = state->var_types[(int)*(double*)(state->code_pointer + 1)];
@@ -267,14 +313,15 @@ double js_run(void* bytecode, struct JsseyState* state, int instructions_cnt, bo
                 break;
             
             case OPCODE_MEM:
-                if (state->memory_pointer >= memory_size) {
+            {
+                int mlen = (int)*(double*)(state->code_pointer + 1);
+                if (state->memory_pointer >= state->memory_size) {
                     print_colored("Out of memory!\n", 0x4);
                     state->is_running = false;
                     state->error = ERROR_OUT_OF_MEMORY;
                     break;
                 }
-
-                int mlen = (int)*(double*)(state->code_pointer + 1);
+                
                 for (int i=0; i<mlen; i++) {
                     state->memory[state->memory_pointer + i] = *(state->code_pointer + 1 + 8 * 1 + i);
                 }
@@ -283,6 +330,7 @@ double js_run(void* bytecode, struct JsseyState* state, int instructions_cnt, bo
                 state->memory_pointer += mlen;
                 state->code_pointer += 1 + 8 * 1 + mlen;
                 break;
+            }
 
             case OPCODE_ADD:
                 state->stack[++state->stack_ptr] = state->stack[state->stack_ptr--] + state->stack[state->stack_ptr--];
@@ -321,6 +369,8 @@ double js_run(void* bytecode, struct JsseyState* state, int instructions_cnt, bo
         
         instr_counter++;
     }
+
+    gc(state);
 
     if (debug) {
         print("Variables: ");

@@ -6,6 +6,11 @@
 #define VAR_TYPE_OBJECT 0x3
 #define VAR_TYPE_POINTER 0x4
 
+struct MemoryBlock {
+    void* ptr;
+    bool used;
+};
+
 struct ByteCode {
     u16 variables_count;
     u16 functions_count;
@@ -19,6 +24,7 @@ struct JsseyState {
     double result;
     int error;
     string memory;
+    bool* used_memory;
     double* variables;
     double* stack;
     char** call_stack;
@@ -27,6 +33,8 @@ struct JsseyState {
     int stack_ptr;
     int call_stack_pointer;
     int memory_pointer;
+    int memory_size;
+    int vars_count;
     struct ByteCode* code;
     char* fn_main_ptr;
     char* code_pointer;
