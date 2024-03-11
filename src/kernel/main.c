@@ -46,7 +46,7 @@ void user_loop() {
     struct JsseyState* state = ((struct JsseyState**)(mem->process_list))[0];
 
     // update state for each process
-    js_propset(state, "keycode", state->memory + 0, (double)mem->kbd_keycode, VAR_TYPE_NUMBER);
+    js_propset(state, "keycode", state->memory + 2, (double)mem->kbd_keycode, VAR_TYPE_NUMBER);
     double char_address = 0;
     u8 char_type = VAR_TYPE_POINTER;
     js_propget(state, "keyChar", state->memory + 2, &char_address, &char_type);
@@ -205,6 +205,8 @@ void test_js() {
 
 void kmain() {
     println("Strelka System");
+    print_cursor_enable(0, 0);
+    print_cursor_set(0, 1);
 
     //kbd_leds(0x3);
 
@@ -220,6 +222,8 @@ void kmain() {
     mem_init();
 
     user_init();
+
+    print_cursor_disable();
 
     while (true) {
         sys_loop();

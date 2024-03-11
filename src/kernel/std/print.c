@@ -1,6 +1,7 @@
 #include "types.h"
 #include "print.h"
 #include "mem.h"
+#include "io.h"
 
 void print_init() {
     struct MemoryTablesList* data = (struct MemoryTablesList*)MEM_DATA_ADDR;
@@ -53,4 +54,29 @@ void print(string str) {
 void println(string str) {
     print(str);
     print("\n");
+}
+
+void print_cursor_enable(u8 cursor_start, u8 cursor_end)
+{
+	outb(0x3D4, 0x0A);
+	outb(0x3D5, (inb(0x3D5) & 0xC0) | cursor_start);
+ 
+	outb(0x3D4, 0x0B);
+	outb(0x3D5, (inb(0x3D5) & 0xE0) | cursor_end);
+}
+
+void print_cursor_disable()
+{
+	outb(0x3D4, 0x0A);
+	outb(0x3D5, 0x20);
+}
+
+void print_cursor_set(int x, int y)
+{
+	u16 pos = y * SCREEN_WIDTH + x;
+ 
+	outb(0x3D4, 0x0F);
+	outb(0x3D5, (u8) (pos & 0xFF));
+	outb(0x3D4, 0x0E);
+	outb(0x3D5, (u8) ((pos >> 8) & 0xFF));
 }
