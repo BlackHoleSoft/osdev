@@ -4,6 +4,7 @@
 #include "std/mem.h"
 #include "std/ata.h"
 #include "jssey/jsmain.h"
+#include "std/fs.h"
 
 #define SCREEN_WIDTH 80
 #define SCREEN_HEIGHT 25
@@ -203,6 +204,39 @@ void test_js() {
     println(num_to_str(mem_get_overall_used(), 10));
 }
 
+void test_fs() {
+    struct FSTableItem* tmpfile;    
+
+    println("Test fs:");
+
+    for (int i=0; true; i++) {
+        tmpfile = fs_get_file(1 + i);
+        if (tmpfile->name[0] == 0) {
+            break;
+        }
+
+        char* contents = fs_get_file_contents(tmpfile);
+        print("~/");
+        println(tmpfile->name);
+        println(contents);
+        println("------------");
+
+        mem_free(tmpfile);
+        mem_free(contents);
+    }    
+
+    println("");
+    println("Add new file:");
+
+    struct FSTableItem* file = mem_512();
+    string fileContent = mem_10kb();
+
+    str_copy(file->name, "newTestFile.txt");
+    str_copy(fileContent, "This is a test file from strelka testing function.\nVam vsem pizda *&^$#@!");
+
+    fs_add_file(file, fileContent, 1);
+}
+
 void kmain() {
     println("Strelka System");
     print_cursor_enable(0, 0);
@@ -225,10 +259,10 @@ void kmain() {
 
     print_cursor_disable();
 
-    while (true) {
-        sys_loop();
-        user_loop();
-    }
+    // while (true) {
+    //     sys_loop();
+    //     user_loop();
+    // }
 
     ////////////////////////////////////////////////////////////////
     // TESTS
@@ -268,6 +302,8 @@ void kmain() {
     // clear();
 
     // test_js();
+
+    test_fs();
 
     // println("");
     // println("End of tests");
