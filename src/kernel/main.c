@@ -226,15 +226,21 @@ void test_fs() {
     }    
 
     println("");
-    println("Add new file:");
 
     struct FSTableItem* file = mem_512();
     string fileContent = mem_10kb();
 
-    str_copy(file->name, "newTestFile.txt");
-    str_copy(fileContent, "This is a test file from strelka testing function.\nVam vsem pizda *&^$#@!");
+    // println("Add new file:");
 
-    fs_add_file(file, fileContent, 1);
+    // str_copy(file->name, "newTestFile.txt");
+    // str_copy(fileContent, "This is a test file from strelka testing function.\nVam vsem pizda *&^$#@!");
+
+    // fs_add_file(file, fileContent, 1);
+
+    println("Get file 'newTestFile.txt'");
+    fs_get_file_by_name(file, "newTestFile.txt");
+    string newContent = fs_get_file_contents(file);
+    println(newContent);
 }
 
 void kmain() {
@@ -255,7 +261,7 @@ void kmain() {
 
     mem_init();
 
-    user_init();
+    //user_init();
 
     print_cursor_disable();
 
@@ -303,6 +309,7 @@ void kmain() {
 
     // test_js();
 
+    clear();
     test_fs();
 
     // println("");

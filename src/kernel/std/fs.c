@@ -51,3 +51,18 @@ void fs_add_file(struct FSTableItem* file, char* contents, int content_length) {
     // write header
     ata_write_sectors(header_sector, 1, (u8*)file);
 }
+
+void fs_get_file_by_name(struct FSTableItem* out, string name) {
+    char* tmp_data = mem_512();    
+    for (int i=FS_TABLE_START_SECTOR; i<FS_TABLE_SIZE; i++) {
+        ata_read_sectors(tmp_data, i, 1);
+        if (str_compare(name, tmp_data)) {
+            for (int j=0; j<512; j++) {
+                char* outc = (char*)out;
+                outc[j] = tmp_data[j];
+            }
+            return;
+        }
+    }
+    mem_free(tmp_data);
+}

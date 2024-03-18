@@ -56,3 +56,15 @@ string str_copy(string buffer, string value) {
     }
     buffer[i] = '\0';
 }
+
+bool str_compare(string str1, string str2) {
+    int len = str_len(str1);
+    if (len == str_len(str2)) {
+        for (int i=0; i<len; i++) {
+            if (str1[i] != str2[i])
+                return false;
+        }
+        return true;
+    }
+    return false;
+}
