@@ -5,6 +5,7 @@
 #include "std/ata.h"
 #include "jssey/jsmain.h"
 #include "std/fs.h"
+#include "wasm/leb.h"
 
 #define SCREEN_WIDTH 80
 #define SCREEN_HEIGHT 25
@@ -241,6 +242,40 @@ void test_fs() {
     fs_get_file_by_name(file, "newTestFile.txt");
     string newContent = fs_get_file_contents(file);
     println(newContent);
+
+    println("Updating file 'newTestFile.txt'");
+    newContent[0] = newContent[0] > 'z' ? 'a' : newContent[0] + 1;
+    newContent[1] = '!';
+    fs_update_file(file, newContent, 10);
+}
+
+void test_leb() {
+    char buff[64] = {0, 0, 0, 0, 0, 0, 0, 0};
+
+    println("Test LEB128");
+
+    u64 uValue = 0;
+
+    writeULeb128(buff, 11);
+    u8 size = readULeb128(buff, &uValue);
+
+    print("uleb: ");
+    print(num_to_str((int)uValue, 10));
+    print(";");
+    println(num_to_str((int)size, 10));
+
+    char buff2[64] = {0, 0, 0, 0, 0, 0, 0, 0};
+
+    long sValue = 0;
+    writeSLeb128(buff2, -11);
+    u8 size2 = readSLeb128(buff2, &sValue);
+
+    print("sleb: ");
+    print(num_to_str((int)sValue, 10));
+    print(";");
+    println(num_to_str((int)size2, 10));
+
+    println("End test");
 }
 
 void kmain() {
@@ -309,8 +344,11 @@ void kmain() {
 
     // test_js();
 
+    // clear();
+    // test_fs();
+
     clear();
-    test_fs();
+    test_leb();
 
     // println("");
     // println("End of tests");

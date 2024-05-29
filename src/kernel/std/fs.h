@@ -21,3 +21,4 @@ struct FSTableItem* fs_get_file(int sector);
 char* fs_get_file_contents(struct FSTableItem* file);
 void fs_add_file(struct FSTableItem* file, char* contents, int content_length);
 void fs_get_file_by_name(struct FSTableItem* out, string name);
+void fs_update_file(struct FSTableItem* file, string content, int content_length);

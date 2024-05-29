@@ -19,6 +19,8 @@ char* fs_get_file_contents(struct FSTableItem* file) {
 }
 
 void fs_add_file(struct FSTableItem* file, char* contents, int content_length) {
+    if (content_length >= 160 * 512) return;
+
     char* tmp_data = mem_512();
     int header_sector = 0;
     int max_sector = 0;
@@ -64,5 +66,49 @@ void fs_get_file_by_name(struct FSTableItem* out, string name) {
             return;
         }
     }
+    mem_free(tmp_data);
+}
+
+void fs_update_file(struct FSTableItem* file, string content, int content_length) {
+    if (content_length >= 160 * 512) return;
+
+    char* tmp_data = mem_512();  
+    struct FSTableItem* tmpfile;
+    int max_sector = 0;
+    int current_sector = 0;
+    for (int i=FS_TABLE_START_SECTOR; i<FS_TABLE_SIZE; i++) {
+        ata_read_sectors(tmp_data, i, 1);
+        if (str_compare(file->name, tmp_data)) {
+            tmpfile = (struct FSTableItem*)tmp_data;
+            current_sector = i;
+        }
+
+        struct FSTableItem* tf = (struct FSTableItem*)tmp_data;
+        for (int j=0; j<tf->size; j++) {
+            if (tf->sectors[j] > max_sector) {
+                max_sector = tf->sectors[j];
+            }
+        }
+    }
+
+    if (current_sector > 0) {
+        // write contents    
+        for (int i = 0; i <= content_length / 512; i++) {
+            if (i < tmpfile->size) {
+                ata_write_sectors(tmpfile->sectors[i], 1, content + i * 512);
+            } else {
+                ata_write_sectors(++max_sector, 1, content + i * 512);
+                tmpfile->sectors[i] = max_sector;
+                tmpfile->size++;
+            }
+        }
+
+        tmpfile->size = content_length / 512 + 1;
+        str_copy(tmpfile->name, file->name);
+        str_copy(tmpfile->update_date, "2233-01-01T00:00:00");
+
+        ata_write_sectors(current_sector, 1, (u8*)tmpfile);
+    }
+
     mem_free(tmp_data);
 }
