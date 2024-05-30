@@ -47,6 +47,9 @@ u8 readULeb128(char* addr, u64* ret) {
   return count;
 }
 
+// WARNING: signed LEB128 needs to conver signed integers from wasm binary format
+// TODO: write signed leb conversion algorithm
+
 u8 writeSLeb128(char buffer[BUFF_SIZE], long val) {
     return writeULeb128(buffer, prepareSignedValue(val));
 }
