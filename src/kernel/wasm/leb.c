@@ -20,7 +20,7 @@ u8 writeULeb128(char buffer[BUFF_SIZE], u64 val) {
     } while (val != 0);
 
     for (int i=0; i<BUFF_SIZE; i++) {
-        buffer[i] = i < count ? buffer[BUFF_SIZE - count + i] : 0;
+        buffer[i] = i < count ? buffer[BUFF_SIZE - 1 - i] : 0;
     }
 
     return count;

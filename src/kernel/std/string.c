@@ -7,12 +7,12 @@ int str_len(string str) {
     return len;
 }
 
-string num_to_str(int num, int r) {
+string num_to_str(long num, int r) {
     if (num == 0) return "0";
 
     string str = mem_512();
-    str[15] = 0;
-    int n = num;
+    str[511] = 0;
+    int n = num > 0 ? num : -num;
     int i = 0;   
     int end = str_len(str) - 1;
 
@@ -22,6 +22,12 @@ string num_to_str(int num, int r) {
         str[end - 1 - i] = mod > 9 ? (mod - 10) + 0x61 : mod + 0x30;
         i++;
     }
+
+    if (num < 0) {
+        str[end - 1 - i] = '-';
+        i++;
+    }
+
     str[end] = '\0';
     mem_free(str);
     return (string)((ulong)str + (end - i));
