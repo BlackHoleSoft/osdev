@@ -101,7 +101,8 @@ void mem_init() {
     mem_list->count = 1;
     mem_list->first = first_table;
 
-    mem_block_init(1024 * 10); // 10 mb block on index=1    
+    mem_block_init(1024 * 10); // 10 mb block on index=1 (section 10kb)
+    mem_block_init(1024 * 1024); // 1 gb block on index=2 (section 1mb)
 }
 
 int mem_total_size() {
@@ -137,6 +138,10 @@ void* mem_512() {
 
 void* mem_10kb() {
     return mem_section(1);
+}
+
+void* mem_1mb() {
+    return mem_section(2);
 }
 
 int mem_get_overall_used() {

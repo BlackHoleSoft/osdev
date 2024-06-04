@@ -34,6 +34,8 @@ void* mem_512();
 
 void* mem_10kb();
 
+void* mem_1mb();
+
 bool mem_free(void* ptr);
 
 int mem_get_overall_used();

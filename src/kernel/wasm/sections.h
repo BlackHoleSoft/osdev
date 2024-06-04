@@ -50,7 +50,7 @@ struct WParsedExportItem {
 };
 
 struct WLocalsItem {
-    u32 value;
+    u32 count;
     u8 valType;
 };
 
@@ -59,4 +59,13 @@ struct WParsedCodePiece {
     u32 localsCount;
     struct WLocalsItem* locals;
     string code;
+};
+
+struct WParsedModule {
+    u32 version;
+    struct WSection* sectionTypes;
+    struct WSection* sectionFunctions;
+    struct WSection* sectionImports;
+    struct WSection* sectionExports;
+    struct WSection* sectionCode;
 };
