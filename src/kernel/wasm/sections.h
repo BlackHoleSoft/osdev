@@ -13,6 +13,8 @@
 #define WSECTION_ID_CODE 10
 #define WSECTION_ID_DATA 11
 
+#define WSECTION_IMPORT_EXPORT_SIZE 64
+
 struct WVec {
     u32 size;
     void* data;
@@ -69,3 +71,13 @@ struct WParsedModule {
     struct WSection* sectionExports;
     struct WSection* sectionCode;
 };
+
+struct WParsedImportItem* parseImport(struct WSection* data);
+
+struct WParsedExportItem* parseExport(struct WSection* data);
+
+struct WParsedCodePiece* parseCode(struct WSection* data);
+
+struct WSection* findSection(u8* module, u32 moduleSize, u8 sectionType);
+
+struct WParsedModule* parseModule(u8* module);

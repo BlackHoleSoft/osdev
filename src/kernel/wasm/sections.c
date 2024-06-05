@@ -12,9 +12,9 @@ struct WParsedImportItem* parseImport(struct WSection* data) {
     u32 index = 0;
     u16 bufferOffset = 0;
 
-    struct WParsedImportItem items[64];
+    struct WParsedImportItem items[WSECTION_IMPORT_EXPORT_SIZE];
 
-    if (count > 64) {
+    if (count > WSECTION_IMPORT_EXPORT_SIZE) {
         error(ERR_WASM_IMPORT_SIZE, "Imports count > 64");
         return items;
     }
@@ -47,6 +47,49 @@ struct WParsedImportItem* parseImport(struct WSection* data) {
         index = *(u32*)(ptr[bufferOffset]);
 
         items[i].moduleName = moduleName;
+        items[i].fnName = fnName;
+        items[i].kind = kind;
+        items[i].index = index;
+    }
+    
+    return items;
+}
+
+struct WParsedExportItem* parseExport(struct WSection* data) {
+    struct WSectionVecContent* content = (struct WSectionVecContent*)data->content;
+    int count = content->data.size;
+
+    string fnName = mem_512();
+    u8 kind = 0;
+    u32 index = 0;
+    u16 bufferOffset = 0;
+
+    struct WParsedExportItem items[WSECTION_IMPORT_EXPORT_SIZE];
+
+    if (count > WSECTION_IMPORT_EXPORT_SIZE) {
+        error(ERR_WASM_EXPORT_SIZE, "Exports count > 64");
+        return items;
+    }
+    
+    for (int i = 0; i < count; i++) {
+        u8* ptr = (u8*)&(content->data.data);       
+
+        // read function name
+        u8 strLength = ptr[bufferOffset];
+        bufferOffset++;
+        for (int j = 0; j < strLength; j++) {
+            fnName[j] = ptr[bufferOffset + j];
+        }
+        fnName[strLength] = '\0';
+        bufferOffset += strLength;
+
+        // read kind
+        kind = ptr[bufferOffset];
+        bufferOffset++;
+
+        // read index
+        index = *(u32*)(ptr[bufferOffset]);
+
         items[i].fnName = fnName;
         items[i].kind = kind;
         items[i].index = index;
@@ -137,6 +180,18 @@ struct WParsedModule* parseModule(u8* module) {
         error(ERR_WASM_WRONG_MODULE, "Invalid module magic number");
     }
 
+    struct WParsedModule* parsed = (struct WParsedModule*)buffer;
+    u32 bufferoffset = 4;
 
+    parsed->version = *(u32*)(buffer + bufferOffset);
 
+    bufferOffset += 4;
+
+    parsed->sectionTypes = findSection(module, maxModuleSize /*TODO: find real module size*/, WSECTION_ID_TYPE);
+    parsed->sectionImports = findSection(module, maxModuleSize /*TODO: find real module size*/, WSECTION_ID_IMPORT);
+    parsed->sectionExports = findSection(module, maxModuleSize /*TODO: find real module size*/, WSECTION_ID_EXPORT);
+    parsed->sectionFunctions = findSection(module, maxModuleSize /*TODO: find real module size*/, WSECTION_ID_FUNCTION);
+    parsed->sectionCode = findSection(module, maxModuleSize /*TODO: find real module size*/, WSECTION_ID_CODE);
+
+    return parsed;
 }
