@@ -17,7 +17,7 @@
 
 struct WVec {
     u32 size;
-    void* data;
+    u8* data;
 };
 
 struct WSection {
@@ -36,6 +36,12 @@ struct WSectionVecContent {
 
 struct WSectionStartContent {
     u32 fnIndex;
+};
+
+struct WParsedTypeItem {
+    u32 paramsCount;
+    u32 retCount;
+    u8* types;
 };
 
 struct WParsedImportItem {
@@ -70,6 +76,17 @@ struct WParsedModule {
     struct WSection* sectionImports;
     struct WSection* sectionExports;
     struct WSection* sectionCode;
+    
+    struct WParsedTypeItem* parsedTypes;
+    struct WParsedImportItem* parsedImport;
+    struct WParsedExportItem* parsedExport;
+    struct WParsedCodePiece* parsedCode;
+    struct WVec* functionsVector;
+
+    u32 typesCount;
+    u32 importCount;
+    u32 exportCount;
+    u32 codePieceCount;
 };
 
 struct WParsedImportItem* parseImport(struct WSection* data);
@@ -81,3 +98,7 @@ struct WParsedCodePiece* parseCode(struct WSection* data);
 struct WSection* findSection(u8* module, u32 moduleSize, u8 sectionType);
 
 struct WParsedModule* parseModule(u8* module);
+
+void printWTypes(struct WParsedTypeItem* items, int count);
+
+void printWParsedModule(struct WParsedModule* module);

@@ -19,8 +19,7 @@ u32 findMainFnIndex(struct WParsedModule* md) {
 
 struct WParsedCodePiece getFnCode(struct WParsedModule* md, u32 index) {
     struct WParsedCodePiece* items = parseCode(md->sectionCode);
-    return items[index];
-    
+    return items[index];    
 }
 
 int wsvmStart(u8* module) {
@@ -30,7 +29,7 @@ int wsvmStart(u8* module) {
         return ERR_WASM_WRONG_MODULE;
     }
 
-
+    printWParsedModule(parsedModule);
 
     return 0;
 }

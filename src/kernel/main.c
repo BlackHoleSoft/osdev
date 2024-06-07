@@ -6,6 +6,7 @@
 #include "jssey/jsmain.h"
 #include "std/fs.h"
 #include "wasm/leb.h"
+#include "wasm/wsvm.h"
 
 #define SCREEN_WIDTH 80
 #define SCREEN_HEIGHT 25
@@ -283,6 +284,16 @@ void test_leb(long initial) {
     println("End test");
 }
 
+void test_wsvm() {
+    u8* module = mem_10kb();
+    ata_read_sectors(module, 0x1, 1);
+
+    print(".");
+    println(module + 1);
+
+    wsvmStart(module);
+}
+
 void kmain() {
     println("Strelka System");
     print_cursor_enable(0, 0);
@@ -356,6 +367,13 @@ void kmain() {
     test_leb(0);
     test_leb(15);
     test_leb(45600666);
+
+    for (int i=1; i > 0; i++);
+    for (int i=1; i > 0; i++);
+    for (int i=1; i > 0; i++);
+
+    clear();
+    test_wsvm();
 
     // println("");
     // println("End of tests");
