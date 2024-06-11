@@ -147,7 +147,7 @@ struct WParsedCodePiece* parseCode(struct WSection* data) {
     return items;
 }
 
-struct WSection* findSection(u8* module, u32 moduleSize, u8 sectionType) {
+u8* findSection(u8* module, u32 moduleSize, u8 sectionType) {
     int bufferOffset = 8;
     
     u8 type = 0;
@@ -159,7 +159,7 @@ struct WSection* findSection(u8* module, u32 moduleSize, u8 sectionType) {
         size = *(u32*)(module + bufferOffset);
 
         if (type == sectionType) {
-            return (struct WSection*)(module + bufferOffset);
+            return module + bufferOffset;
         }
 
         bufferOffset += size;
@@ -168,14 +168,41 @@ struct WSection* findSection(u8* module, u32 moduleSize, u8 sectionType) {
     return NULL;
 }
 
+struct WSection* parseSection(u8* section) {
+    struct WSection* newSection = mem_512();
+    u64 size = 0;
+    u8 lebLength = 0;
+
+    lebLength = readULeb128(section + 1, &size);
+
+    newSection->id = section[0];
+    newSection->size = (u32)size;
+    newSection->content = section + 1 + lebLength;
+
+    return newSection;
+}
+
+struct WVec* parseVec(u8* data) {
+    struct WVec* vec = mem_512();
+    u64 size = 0;
+    u8 lebLength = 0;
+
+    lebLength = readULeb128(data + 0, &size);
+
+    vec->size = size;
+    vec->data = data + lebLength;
+
+    return vec;
+}
+
 struct WParsedTypeItem* parseTypes(struct WSection* data) {
-    struct WSectionVecContent* content = (struct WSectionVecContent*)data->content;
-    int count = content->data.size;
+    struct WVec* content = parseVec(data->content);
+    int count = content->size;
 
     u32 offset = 0;
 
     struct WParsedTypeItem* items = mem_10kb();
-    u8* rawData = content->data.data;
+    u8* rawData = content->data;
 
     for (int i = 0; i < count; i++) {
         u8 firstByte = rawData[offset];
@@ -228,11 +255,11 @@ struct WParsedModule* parseModule(u8* module) {
 
     bufferOffset += 4;
 
-    parsed->sectionTypes = findSection(module, maxModuleSize /*TODO: find real module size*/, WSECTION_ID_TYPE);
-    parsed->sectionImports = findSection(module, maxModuleSize /*TODO: find real module size*/, WSECTION_ID_IMPORT);
-    parsed->sectionExports = findSection(module, maxModuleSize /*TODO: find real module size*/, WSECTION_ID_EXPORT);
-    parsed->sectionFunctions = findSection(module, maxModuleSize /*TODO: find real module size*/, WSECTION_ID_FUNCTION);
-    parsed->sectionCode = findSection(module, maxModuleSize /*TODO: find real module size*/, WSECTION_ID_CODE);
+    parsed->sectionTypes = parseSection(findSection(module, maxModuleSize /*TODO: find real module size*/, WSECTION_ID_TYPE));
+    parsed->sectionImports = parseSection(findSection(module, maxModuleSize /*TODO: find real module size*/, WSECTION_ID_IMPORT));
+    parsed->sectionExports = parseSection(findSection(module, maxModuleSize /*TODO: find real module size*/, WSECTION_ID_EXPORT));
+    parsed->sectionFunctions = parseSection(findSection(module, maxModuleSize /*TODO: find real module size*/, WSECTION_ID_FUNCTION));
+    parsed->sectionCode = parseSection(findSection(module, maxModuleSize /*TODO: find real module size*/, WSECTION_ID_CODE));
 
     parsed->parsedTypes = parseTypes(parsed->sectionTypes);
     parsed->typesCount = ((struct WVec*)parsed->sectionTypes->content)->size;
@@ -275,5 +302,7 @@ void printWParsedModule(struct WParsedModule* module) {
 
     print("; code=");
     print(num_to_str(module->sectionCode->size, 10));
+
+    println("");
 }
 

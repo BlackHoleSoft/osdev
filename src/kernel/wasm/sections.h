@@ -1,4 +1,5 @@
 #include "../std/types.h"
+#include "leb.h"
 
 #define WSECTION_ID_CUSTOM 0
 #define WSECTION_ID_TYPE 1
@@ -95,7 +96,7 @@ struct WParsedExportItem* parseExport(struct WSection* data);
 
 struct WParsedCodePiece* parseCode(struct WSection* data);
 
-struct WSection* findSection(u8* module, u32 moduleSize, u8 sectionType);
+u8* findSection(u8* module, u32 moduleSize, u8 sectionType);
 
 struct WParsedModule* parseModule(u8* module);
 

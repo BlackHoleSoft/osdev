@@ -292,6 +292,8 @@ void test_wsvm() {
     println(module + 1);
 
     wsvmStart(module);
+
+    println("OK");
 }
 
 void kmain() {
