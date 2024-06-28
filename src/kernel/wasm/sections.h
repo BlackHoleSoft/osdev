@@ -91,6 +91,8 @@ struct WParsedModule {
     u32 functionsCount;
 };
 
+struct WVec* parseVec(u8* data);
+
 struct WParsedImportItem* parseImport(struct WSection* data);
 
 struct WParsedExportItem* parseExport(struct WSection* data);
@@ -104,5 +106,7 @@ struct WParsedModule* parseModule(u8* module);
 void printWTypes(struct WParsedTypeItem* items, int count);
 
 void printWFunctions(u32* items, int count);
+
+void printWExports(struct WParsedExportItem* items, int count);
 
 void printWParsedModule(struct WParsedModule* module);

@@ -56,8 +56,9 @@ struct WParsedImportItem* parseImport(struct WSection* data) {
 }
 
 struct WParsedExportItem* parseExport(struct WSection* data) {
-    struct WSectionVecContent* content = (struct WSectionVecContent*)data->content;
-    int count = content->data.size;
+    struct WVec* vec = parseVec(data->content);
+    int count = vec->size;
+    u8* ptr = vec->data;
 
     string fnName = mem_512();
     u8 kind = 0;
@@ -72,27 +73,28 @@ struct WParsedExportItem* parseExport(struct WSection* data) {
     }
     
     for (int i = 0; i < count; i++) {
-        u8* ptr = (u8*)&(content->data.data);       
-
         // read function name
-        u8 strLength = ptr[bufferOffset];
-        bufferOffset++;
-        for (int j = 0; j < strLength; j++) {
-            fnName[j] = ptr[bufferOffset + j];
+        struct WVec* nameVec = parseVec(ptr + bufferOffset);
+        for (int j = 0; j < nameVec->size; j++) {
+            fnName[j] = nameVec->data[j];
         }
-        fnName[strLength] = '\0';
-        bufferOffset += strLength;
+        fnName[nameVec->size] = '\0';
+
+        bufferOffset += nameVec->lebSize + nameVec->size;
 
         // read kind
         kind = ptr[bufferOffset];
         bufferOffset++;
 
         // read index
-        index = *(u32*)(ptr + bufferOffset);
+        u64 index = 0;
+        u8 lebLength = readULeb128(ptr + bufferOffset, &index);
 
         items[i].fnName = fnName;
         items[i].kind = kind;
-        items[i].index = index;
+        items[i].index = (u32)index;
+
+        bufferOffset += 1 + lebLength;
     }
     
     return items;
@@ -272,6 +274,9 @@ struct WParsedModule* parseModule(u8* module) {
     parsed->parsedFunctions = parseFunctions(parsed->sectionFunctions);
     parsed->functionsCount = parseVec(parsed->sectionFunctions->content)->size;
 
+    parsed->parsedExport = parseExport(parsed->sectionExports);
+    parsed->exportCount = parseVec(parsed->sectionExports->content)->size;
+
     return parsed;
 }
 
@@ -297,6 +302,20 @@ void printWFunctions(u32* items, int count) {
     for (int i=0; i<count; i++) {
         print(num_to_str(items[i], 10));
         print(",");
+    }
+    print("]; ");
+}
+
+void printWExports(struct WParsedExportItem* items, int count) {
+    print("Exports: [");
+    for (int i=0; i<count; i++) {
+        print("{");
+        print(items[i].fnName);
+        print(",kind=");
+        print(num_to_str(items[i].kind, 16));
+        print(",idx=");
+        print(num_to_str(items[i].index, 10));
+        print("},");
     }
     print("]; ");
 }
