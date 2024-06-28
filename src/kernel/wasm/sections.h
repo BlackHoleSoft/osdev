@@ -18,6 +18,7 @@
 
 struct WVec {
     u32 size;
+    u8 lebSize;
     u8* data;
 };
 
@@ -40,9 +41,8 @@ struct WSectionStartContent {
 };
 
 struct WParsedTypeItem {
-    u32 paramsCount;
-    u32 retCount;
-    u8* types;
+    struct WVec* params;
+    struct WVec* results;
 };
 
 struct WParsedImportItem {

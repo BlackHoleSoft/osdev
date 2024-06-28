@@ -151,18 +151,18 @@ u8* findSection(u8* module, u32 moduleSize, u8 sectionType) {
     int bufferOffset = 8;
     
     u8 type = 0;
-    u32 size = 0;
+    u64 size = 0;
 
     while (bufferOffset < moduleSize) {
         type = *(module + bufferOffset);
-        bufferOffset += 1;
-        size = *(u32*)(module + bufferOffset);
+
+        u8 lebLength = readULeb128(module + bufferOffset + 1, &size);
 
         if (type == sectionType) {
             return module + bufferOffset;
         }
 
-        bufferOffset += size;
+        bufferOffset += 1 + lebLength + size;
     }
 
     return NULL;
@@ -191,6 +191,7 @@ struct WVec* parseVec(u8* data) {
 
     vec->size = size;
     vec->data = data + lebLength;
+    vec->lebSize = lebLength;
 
     return vec;
 }
@@ -210,25 +211,9 @@ struct WParsedTypeItem* parseTypes(struct WSection* data) {
             error(ERR_WASM_TYPES_OVERFLOW, "Parse types overflow error");
             break;
         }
-        offset += 1;
 
-        // parse parameters
-        items[i].paramsCount = *(u32*)(rawData + offset);
-        offset += 4;
-
-        for(int j = 0; j < items[i].paramsCount; j++) {
-            items->types[j] = rawData[offset];
-            offset += 1;
-        }
-
-        // parse results
-        items[i].retCount = *(u32*)(rawData + offset);
-        offset += 4;
-
-        for(int j = 0; j < items[i].retCount; j++) {
-            items->types[j + items[i].paramsCount] = rawData[offset];
-            offset += 1;
-        }
+        items[i].params = parseVec(rawData + offset + 1);
+        items[i].results = parseVec(rawData + offset + 1 + items[i].params->lebSize + items[i].params->size);        
     }
 
     return items;
@@ -262,7 +247,7 @@ struct WParsedModule* parseModule(u8* module) {
     parsed->sectionCode = parseSection(findSection(module, maxModuleSize /*TODO: find real module size*/, WSECTION_ID_CODE));
 
     parsed->parsedTypes = parseTypes(parsed->sectionTypes);
-    parsed->typesCount = ((struct WVec*)parsed->sectionTypes->content)->size;
+    parsed->typesCount = parseVec(parsed->sectionTypes->content)->size;
 
     return parsed;
 }
@@ -271,13 +256,13 @@ void printWTypes(struct WParsedTypeItem* items, int count) {
     print("Types: ");
     for (int i=0; i<count; i++) {
         print("p=[");
-        for (int j = 0; j<items[i].paramsCount; j++) {
-            print(num_to_str(items[i].types[j], 10));
+        for (int j = 0; j<items[i].params->size; j++) {
+            print(num_to_str(items[i].params->data[j], 16));
             print(",");
         }
         print("],r=[");
-        for (int j = 0; j<items[i].retCount; j++) {
-            print(num_to_str(items[i].types[j + items[i].paramsCount], 10));
+        for (int j = 0; j<items[i].results->size; j++) {
+            print(num_to_str(items[i].results->data[j], 16));
             print(",");
         }
         print("]; ");
