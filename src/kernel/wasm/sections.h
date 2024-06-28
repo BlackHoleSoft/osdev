@@ -79,15 +79,16 @@ struct WParsedModule {
     struct WSection* sectionCode;
     
     struct WParsedTypeItem* parsedTypes;
+    u32* parsedFunctions;
     struct WParsedImportItem* parsedImport;
     struct WParsedExportItem* parsedExport;
     struct WParsedCodePiece* parsedCode;
-    struct WVec* functionsVector;
 
     u32 typesCount;
     u32 importCount;
     u32 exportCount;
     u32 codePieceCount;
+    u32 functionsCount;
 };
 
 struct WParsedImportItem* parseImport(struct WSection* data);
@@ -101,5 +102,7 @@ u8* findSection(u8* module, u32 moduleSize, u8 sectionType);
 struct WParsedModule* parseModule(u8* module);
 
 void printWTypes(struct WParsedTypeItem* items, int count);
+
+void printWFunctions(u32* items, int count);
 
 void printWParsedModule(struct WParsedModule* module);

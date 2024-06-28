@@ -219,6 +219,26 @@ struct WParsedTypeItem* parseTypes(struct WSection* data) {
     return items;
 }
 
+u32* parseFunctions(struct WSection* data) {
+    struct WVec* content = parseVec(data->content);
+    int count = content->size;
+
+    u32 offset = 0;    
+
+    u32* items = mem_10kb();
+    u8* rawData = content->data;
+
+    for (int i = 0; i < count; i++) {
+        u64 idx = 0;
+        u32 lebLength = readULeb128(rawData + offset, &idx);
+        items[i] = idx;
+
+        offset += lebLength;        
+    }
+
+    return items;
+}
+
 struct WParsedModule* parseModule(u8* module) {
     u32 bufferOffset = 0;
 
@@ -249,6 +269,9 @@ struct WParsedModule* parseModule(u8* module) {
     parsed->parsedTypes = parseTypes(parsed->sectionTypes);
     parsed->typesCount = parseVec(parsed->sectionTypes->content)->size;
 
+    parsed->parsedFunctions = parseFunctions(parsed->sectionFunctions);
+    parsed->functionsCount = parseVec(parsed->sectionFunctions->content)->size;
+
     return parsed;
 }
 
@@ -267,6 +290,15 @@ void printWTypes(struct WParsedTypeItem* items, int count) {
         }
         print("]; ");
     }
+}
+
+void printWFunctions(u32* items, int count) {
+    print("Fns: [");
+    for (int i=0; i<count; i++) {
+        print(num_to_str(items[i], 10));
+        print(",");
+    }
+    print("]; ");
 }
 
 void printWParsedModule(struct WParsedModule* module) {
