@@ -109,4 +109,6 @@ void printWFunctions(u32* items, int count);
 
 void printWExports(struct WParsedExportItem* items, int count);
 
+void printWCode(struct WParsedCodePiece* items, int count);
+
 void printWParsedModule(struct WParsedModule* module);

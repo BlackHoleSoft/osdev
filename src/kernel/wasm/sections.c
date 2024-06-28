@@ -101,8 +101,9 @@ struct WParsedExportItem* parseExport(struct WSection* data) {
 }
 
 struct WParsedCodePiece* parseCode(struct WSection* data) {
-    struct WSectionVecContent* content = (struct WSectionVecContent*)data->content;
-    int count = content->data.size;
+    struct WVec* vec = parseVec(data->content);
+    int count = vec->size;
+    u8* ptr = vec->data;
 
     int maxLocals = 10000 / (32 + 8);
     int localsDeclCount = 0;
@@ -117,13 +118,18 @@ struct WParsedCodePiece* parseCode(struct WSection* data) {
 
     u16 bufferOffset = 0;
 
-    for (int i = 0; i < count; i++) {       
-        u8* ptr = (u8*)&(content->data.data);
-        
-        items[i].size = *(u32*)(ptr + bufferOffset);
-        bufferOffset += 4;
-        items[i].localsCount = *(u32*)(ptr + bufferOffset);
-        bufferOffset += 4;
+    for (int i = 0; i < count; i++) {
+        u64 size = 0;
+        u8 lebLength = readULeb128(ptr + bufferOffset, &size);
+        items[i].size = (u32)size;
+        bufferOffset += lebLength;
+
+        u32 startCodeOffset = bufferOffset;
+
+        struct WVec* localsVec = parseVec(ptr + bufferOffset);
+
+        items[i].localsCount = localsVec->size;
+        bufferOffset += localsVec->lebSize;
 
         localsDeclCount += items[i].localsCount;
         if (localsDeclCount > maxLocals) {
@@ -133,17 +139,19 @@ struct WParsedCodePiece* parseCode(struct WSection* data) {
 
         for (int j = 0; j < items[i].localsCount; j++) {
             // parse locals
-            locals[j].count = *(u32*)(ptr + bufferOffset);
-            bufferOffset += 4;
+            u64 locsize = 0;
+            u8 locLebLength = readULeb128(ptr + bufferOffset, &locsize);
+            locals[j].count = (u32)locsize;
+            bufferOffset += locLebLength;
 
-            locals[j].valType = *(ptr + bufferOffset);            
+            locals[j].valType = *(ptr + bufferOffset);
 
             bufferOffset += 1;
         }
 
         items[i].code = ptr + bufferOffset;
 
-        bufferOffset += items[i].size - items[i].localsCount * (4 + 1);
+        bufferOffset = startCodeOffset + items[i].size;
     }
     
     return items;
@@ -277,6 +285,9 @@ struct WParsedModule* parseModule(u8* module) {
     parsed->parsedExport = parseExport(parsed->sectionExports);
     parsed->exportCount = parseVec(parsed->sectionExports->content)->size;
 
+    parsed->parsedCode = parseCode(parsed->sectionCode);
+    parsed->codePieceCount = parseVec(parsed->sectionCode->content)->size;
+
     return parsed;
 }
 
@@ -315,6 +326,31 @@ void printWExports(struct WParsedExportItem* items, int count) {
         print(num_to_str(items[i].kind, 16));
         print(",idx=");
         print(num_to_str(items[i].index, 10));
+        print("},");
+    }
+    print("]; ");
+}
+
+void printWCode(struct WParsedCodePiece* items, int count) {
+    print("Code: [");
+    for (int i=0; i<count; i++) {
+        print("{size=");
+        print(num_to_str(items[i].size, 10));
+        print(",locls=[");
+
+        for (int j = 0; j < items[i].localsCount; j++) {
+            print(num_to_str(items[i].locals[j].count, 10));
+            print("->");
+            print(num_to_str(items[i].locals[j].valType, 16));
+            print(",");
+        }
+
+        print("],expr=");
+        for(int j = 0; j < items[i].size && j < 9; j++) {
+            print("#");
+            print(num_to_str(items[i].code[j], 16));
+        }
+
         print("},");
     }
     print("]; ");

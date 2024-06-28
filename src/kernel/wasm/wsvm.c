@@ -33,6 +33,7 @@ int wsvmStart(u8* module) {
     printWTypes(parsedModule->parsedTypes, parsedModule->typesCount);
     printWFunctions(parsedModule->parsedFunctions, parsedModule->functionsCount);
     printWExports(parsedModule->parsedExport, parsedModule->exportCount);
+    printWCode(parsedModule->parsedCode, parsedModule->codePieceCount);
 
     return 0;
 }
