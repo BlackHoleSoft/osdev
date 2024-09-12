@@ -1,2 +1,4 @@
 node/*
 vol/*
+strelka/node_modules
+strelka/dist

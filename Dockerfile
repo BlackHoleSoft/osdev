@@ -17,7 +17,7 @@ RUN apk add xorriso grub grub-bios
 WORKDIR /output
 COPY ./iso ./iso
 COPY ./init .
-COPY ./entry.js .
+COPY ./strelka/dist/entry.js .
 COPY ./node ./node
 
 # Put all to /strelkasys
@@ -30,7 +30,6 @@ RUN mkdir -p bin dev mnt proc sys tmp sbin lib
 RUN cp -rf /bin/* /strelkasys/initrd/bin
 RUN cp /output/node/node /strelkasys/initrd/bin
 RUN cp /output/node/lib/* /strelkasys/initrd/lib
-#RUN ldd /bin/sh | grep "=> /" | awk '{print $3}' | xargs -I '{}' cp -v '{}' /strelkasys/initrd/lib
 RUN cp /output/init /strelkasys/initrd
 RUN cp /output/entry.js /strelkasys/initrd
 RUN chmod +x /strelkasys/initrd/init
