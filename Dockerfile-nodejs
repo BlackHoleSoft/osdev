@@ -1,0 +1,10 @@
+FROM alpine:3.14
+
+RUN apk update
+RUN apk add nodejs
+
+RUN mkdir -p /output /output/lib
+RUN cp /usr/bin/node /output
+RUN ldd /usr/bin/node | grep "=> /" | awk '{print $3}' | xargs -I '{}' cp -v '{}' /output/lib
+
+CMD cp -rf /output/* /node
