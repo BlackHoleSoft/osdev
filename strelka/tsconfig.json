@@ -1,10 +1,20 @@
 {
   "compilerOptions": {
-    "outDir": "./dist/",
-    "module": "es6",
-    "target": "es5",
-    "jsx": "react",
-    "allowJs": true,
-    "moduleResolution": "node"
-  }
+      "allowJs": false,
+      "moduleResolution": "node",
+      "target": "ES5",
+      "jsx": "react",
+      "baseUrl": "./",
+      "esModuleInterop": true,
+      "noImplicitAny": true,
+      "allowSyntheticDefaultImports": true,
+      "strict": true,
+      "resolveJsonModule": true,
+      "forceConsistentCasingInFileNames": true,
+      "paths": {
+          "*": ["src/*"],          
+      }
+  },
+  "include": ["src/**/*.tsx", "src/**/*.ts",  "src/app/commonTypes.d.ts"],
+  "exclude": ["node_modules"]
 }
