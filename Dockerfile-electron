@@ -1,13 +1,10 @@
-FROM alpine:3.20
-
-RUN apk update
-RUN apk add nodejs npm p7zip
+FROM node:20-bookworm
 
 WORKDIR /output
 COPY ./strelka .
 RUN rm -rf ./node_modules
 
-RUN ln -s /usr/bin/7z /usr/bin/7za
+#RUN ln -s /usr/bin/7z /usr/bin/7za
 RUN npm i
 RUN npm run prebuild
 RUN npm run build

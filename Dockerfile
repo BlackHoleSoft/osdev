@@ -17,7 +17,7 @@ RUN apk add xorriso grub grub-bios
 WORKDIR /output
 COPY ./iso ./iso
 COPY ./init .
-COPY ./strelka/dist/entry.js .
+COPY ./strelka-build/strelka-electron-0.1.0.AppImage .
 COPY ./node ./node
 
 # Put all to /strelkasys
@@ -31,7 +31,7 @@ RUN cp -rf /bin/* /strelkasys/initrd/bin
 RUN cp /output/node/node /strelkasys/initrd/bin
 RUN cp /output/node/lib/* /strelkasys/initrd/lib
 RUN cp /output/init /strelkasys/initrd
-RUN cp /output/entry.js /strelkasys/initrd
+RUN cp /output/strelka-electron-0.1.0.AppImage /strelkasys/initrd/strelka
 RUN chmod +x /strelkasys/initrd/init
 
 RUN find . | cpio -R root:root -H newc -o | gzip > /strelkasys/rootfs.gz
