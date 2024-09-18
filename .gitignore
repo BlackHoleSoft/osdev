@@ -1,5 +1,6 @@
 node/*
 vol/*
+xorg/*
 strelka/node_modules
 strelka/dist
 strelka-build
