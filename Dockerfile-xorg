@@ -13,5 +13,6 @@ RUN mkdir /xorgtmp/lib
 RUN mkdir -p /xorgtmp/usr/libexec
 RUN cp -rf /usr/libexec/* /xorgtmp/usr/libexec
 RUN ldd /usr/bin/xinit | grep "=> /" | awk '{print $3}' | xargs -I '{}' cp -v '{}' /xorgtmp/lib
+RUN ldd /usr/libexec/Xorg | grep "=> /" | awk '{print $3}' | xargs -I '{}' cp -v '{}' /xorgtmp/lib
 
 CMD cp -rf /xorgtmp/* /xorg
