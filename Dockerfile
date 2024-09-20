@@ -34,7 +34,7 @@ COPY ./xinitrc .
 RUN mkdir /strelkasys
 RUN mkdir /strelkasys/initrd
 WORKDIR /strelkasys/initrd
-RUN mkdir -p bin dev mnt proc sys tmp sbin lib usr/libexec
+RUN mkdir -p bin dev mnt proc sys tmp sbin lib usr/libexec var/log usr/lib/xorg/modules
 
 RUN cp -rf /bin/* /strelkasys/initrd/bin
 RUN cp /output/node/node /strelkasys/initrd/bin
@@ -47,7 +47,9 @@ RUN cp /output/xorg/xinit /strelkasys/initrd/bin
 RUN cp /output/xorg/xterm /strelkasys/initrd/bin
 RUN cp /output/xorg/lib/* /strelkasys/initrd/lib
 RUN cp /output/xorg/usr/libexec/* /strelkasys/initrd/usr/libexec
+RUN cp -rf /output/xorg/modules/* /strelkasys/initrd/usr/lib/xorg/modules
 RUN cp /output/xinitrc /strelkasys/initrd
+RUN cp -rf /usr/lib/* /strelkasys/initrd/lib
 
 RUN cp /output/strelka-electron-0.1.0.AppImage /strelkasys/initrd/strelka
 RUN chmod +x /strelkasys/initrd/init

@@ -1,7 +1,7 @@
 FROM alpine:3.14
 
 RUN apk update
-RUN apk add xorg-server xinit xterm
+RUN apk add xorg-server xinit xterm xf86-video-fbdev
 
 WORKDIR /xorgtmp
 #RUN cp /usr/bin/startx /xorgtmp
@@ -9,10 +9,12 @@ RUN cp /usr/bin/xinit /xorgtmp
 RUN cp /usr/bin/xterm /xorgtmp
 RUN cp /usr/bin/mcookie /xorgtmp
 #RUN cp /usr/bin/X /xorgtmp
-RUN mkdir /xorgtmp/lib
-RUN mkdir -p /xorgtmp/usr/libexec
+RUN mkdir -p /xorgtmp/lib/modules
+RUN mkdir -p /xorgtmp/usr/libexec /xorgtmp/modules
 RUN cp -rf /usr/libexec/* /xorgtmp/usr/libexec
 RUN ldd /usr/bin/xinit | grep "=> /" | awk '{print $3}' | xargs -I '{}' cp -v '{}' /xorgtmp/lib
 RUN ldd /usr/libexec/Xorg | grep "=> /" | awk '{print $3}' | xargs -I '{}' cp -v '{}' /xorgtmp/lib
+RUN cp -rf /usr/lib/xorg/modules/* /xorgtmp/modules
+#RUN cp -rf /usr/lib/modules/* /xorgtmp/lib/modules
 
 CMD cp -rf /xorgtmp/* /xorg
