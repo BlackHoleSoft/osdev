@@ -34,7 +34,7 @@ COPY ./xinitrc .
 RUN mkdir /strelkasys
 RUN mkdir /strelkasys/initrd
 WORKDIR /strelkasys/initrd
-RUN mkdir -p bin dev mnt proc sys tmp sbin lib usr var/log usr/lib/xorg/modules usr/share/X11
+RUN mkdir -p bin dev/pts dev/shm mnt proc sys tmp sbin lib usr var/log usr/lib/xorg/modules usr/share/X11
 
 RUN cp -rf /bin/* /strelkasys/initrd/bin
 RUN cp /output/node/node /strelkasys/initrd/bin
