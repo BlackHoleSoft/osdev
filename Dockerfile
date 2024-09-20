@@ -27,14 +27,16 @@ COPY ./node ./node
 COPY ./xorg ./xorg
 COPY ./startx ./xorg
 COPY ./X ./xorg
+COPY ./xorg-conf ./xorg/conf
 COPY ./xinitrc .
+COPY ./xorg.conf .
 
 # Put all to /strelkasys
 # Generates something in /output
 RUN mkdir /strelkasys
 RUN mkdir /strelkasys/initrd
 WORKDIR /strelkasys/initrd
-RUN mkdir -p bin dev/pts dev/shm mnt proc sys tmp sbin lib usr var/log usr/lib/xorg/modules usr/share/X11
+RUN mkdir -p bin dev/pts dev/shm mnt proc sys tmp sbin lib usr var/log usr/lib/xorg/modules usr/share/X11 etc/X11
 
 RUN cp -rf /bin/* /strelkasys/initrd/bin
 RUN cp /output/node/node /strelkasys/initrd/bin
@@ -49,8 +51,10 @@ RUN cp -rf /output/xorg/lib/* /strelkasys/initrd/lib
 RUN cp -rf /output/xorg/usr/* /strelkasys/initrd/usr
 RUN cp -rf /output/xorg/modules/* /strelkasys/initrd/usr/lib/xorg/modules
 RUN cp /output/xinitrc /strelkasys/initrd
+RUN cp /output/xorg.conf /strelkasys/initrd/etc/X11
 RUN cp -rf /usr/lib/* /strelkasys/initrd/lib
 RUN cp -rf /output/xorg/share/* /strelkasys/initrd/usr/share/X11
+RUN cp -rf /output/xorg/conf/* /strelkasys/initrd/usr/share/X11/xorg.conf.d
 
 RUN cp /output/strelka-electron-0.1.0.AppImage /strelkasys/initrd/strelka
 RUN chmod +x /strelkasys/initrd/init

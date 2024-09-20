@@ -1,2 +1,2 @@
 #!/bin/sh
-exec xterm
+exec xterm -e "/bin/cat /var/log/Xorg.0.log"
