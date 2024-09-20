@@ -10,11 +10,15 @@ RUN cp /usr/bin/xterm /xorgtmp
 RUN cp /usr/bin/mcookie /xorgtmp
 #RUN cp /usr/bin/X /xorgtmp
 RUN mkdir -p /xorgtmp/lib/modules
-RUN mkdir -p /xorgtmp/usr/libexec /xorgtmp/modules
+RUN mkdir -p /xorgtmp/usr/libexec /xorgtmp/modules /xorgtmp/share /xorgtmp/usr/bin
 RUN cp -rf /usr/libexec/* /xorgtmp/usr/libexec
 RUN ldd /usr/bin/xinit | grep "=> /" | awk '{print $3}' | xargs -I '{}' cp -v '{}' /xorgtmp/lib
 RUN ldd /usr/libexec/Xorg | grep "=> /" | awk '{print $3}' | xargs -I '{}' cp -v '{}' /xorgtmp/lib
 RUN cp -rf /usr/lib/xorg/modules/* /xorgtmp/modules
-#RUN cp -rf /usr/lib/modules/* /xorgtmp/lib/modules
+RUN cp -rf /usr/share/X11/* /xorgtmp/share
+
+RUN cp /usr/bin/xkbcomp /xorgtmp/usr/bin
+RUN ldd /usr/bin/xkbcomp | grep "=> /" | awk '{print $3}' | xargs -I '{}' cp -v '{}' /xorgtmp/lib
+RUN ldd /usr/bin/xterm | grep "=> /" | awk '{print $3}' | xargs -I '{}' cp -v '{}' /xorgtmp/lib
 
 CMD cp -rf /xorgtmp/* /xorg
