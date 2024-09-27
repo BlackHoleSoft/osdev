@@ -2,6 +2,7 @@ FROM alpine:3.14
 
 RUN apk update
 RUN apk add xorg-server xinit xterm xf86-video-fbdev
+RUN apk add gcompat
 
 WORKDIR /xorgtmp
 #RUN cp /usr/bin/startx /xorgtmp
@@ -16,6 +17,10 @@ RUN ldd /usr/bin/xinit | grep "=> /" | awk '{print $3}' | xargs -I '{}' cp -v '{
 RUN ldd /usr/libexec/Xorg | grep "=> /" | awk '{print $3}' | xargs -I '{}' cp -v '{}' /xorgtmp/lib
 RUN cp -rf /usr/lib/xorg/modules/* /xorgtmp/modules
 RUN cp -rf /usr/share/X11/* /xorgtmp/share
+
+# copy gcompat
+RUN cp /lib/ld-linux-x86-64.so.2 /lib/libgcompat.so.0 /lib64/ld-linux-x86-64.so.2 /xorgtmp/lib/
+#RUN cp /lib64/ld-linux-x86-64.so.2 /xorgtmp/lib64/
 
 RUN cp /usr/bin/xkbcomp /xorgtmp/usr/bin
 RUN ldd /usr/bin/xkbcomp | grep "=> /" | awk '{print $3}' | xargs -I '{}' cp -v '{}' /xorgtmp/lib

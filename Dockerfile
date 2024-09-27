@@ -30,13 +30,14 @@ COPY ./X ./xorg
 COPY ./xorg-conf ./xorg/conf
 COPY ./xinitrc .
 COPY ./xorg.conf .
+COPY ./prebuilt ./electron
 
 # Put all to /strelkasys
 # Generates something in /output
 RUN mkdir /strelkasys
 RUN mkdir /strelkasys/initrd
 WORKDIR /strelkasys/initrd
-RUN mkdir -p bin dev/pts dev/shm mnt proc sys tmp sbin lib usr var/log usr/lib/xorg/modules usr/share/X11 etc/X11
+RUN mkdir -p bin dev/pts dev/shm mnt proc sys tmp sbin lib usr var/log usr/lib/xorg/modules usr/share/X11 etc/X11 electron
 
 RUN cp -rf /bin/* /strelkasys/initrd/bin
 RUN cp /output/node/node /strelkasys/initrd/bin
@@ -56,15 +57,21 @@ RUN cp -rf /usr/lib/* /strelkasys/initrd/lib
 RUN cp -rf /output/xorg/share/* /strelkasys/initrd/usr/share/X11
 RUN cp -rf /output/xorg/conf/* /strelkasys/initrd/usr/share/X11/xorg.conf.d
 
-RUN cp /output/strelka-electron-0.1.0.AppImage /strelkasys/initrd/strelka
+#RUN cp /output/strelka-electron-0.1.0.AppImage /strelkasys/initrd/strelka.AppImage
+#RUN sed 's|AI\x02|\x00\x00\x00|g' -i /strelkasys/initrd/strelka
 RUN chmod +x /strelkasys/initrd/init
+#RUN chmod +x /strelkasys/initrd/strelka.AppImage
+
+RUN cp -rf /output/electron/* /strelkasys/initrd/electron
+
+RUN ldd /strelkasys/initrd/strelka.AppImage | grep "=> /" | awk '{print $3}' | xargs -I '{}' cp -v '{}' /strelkasys/initrd/lib
 
 RUN find . | cpio -R root:root -H newc -o | gzip > /strelkasys/rootfs.gz
 
 RUN cp /strelkasys/rootfs.gz /output/iso/boot
 RUN cp /boot/vmlinuz-lts /output/iso/boot
 # original initrd: initramfs-lts
-RUN cp -rf /strelkasys/initrd/* /output/iso
+#RUN cp -rf /strelkasys/initrd/* /output/iso
 RUN grub-mkrescue /usr/lib/grub/i386-pc -o /output/strelka.iso /output/iso
 
 CMD cp /output/strelka.iso /vol
