@@ -3,6 +3,7 @@ mount -t devtmpfs none /dev
 mount -t proc none /proc
 mount -t sysfs none /sys
 mkdir -p /dev/pts /dev/shm /dev/input
+mkdir -p /var/log
 mount -vt devpts devpts /dev/pts -o gid=5,mode=620
 mount -vt tmpfs shm /dev/shm
 mknod /dev/console c 5 1
@@ -24,8 +25,8 @@ read ans
 
 echo "Starting X"
 export XINITRC=/xinitrc
-export SHELLS=/etc/shells
-export SHELL=/bin/sh
+#export SHELLS=/etc/shells
+#export SHELL=/bin/sh
 #exec startx 
 exec /bin/sh
 echo "INTERNAL ERROR!!! Cannot run strelka"

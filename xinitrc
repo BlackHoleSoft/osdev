@@ -1,2 +1,3 @@
 #!/bin/sh
-exec /electron/electron
+#exec /electron/electron
+exec xterm
