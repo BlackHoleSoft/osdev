@@ -7,7 +7,8 @@ RUN apt-get -y update
 RUN apt-get -y install --no-install-recommends \
     linux-image-amd64
 RUN apt-get -y install xorriso grub-pc-bin grub-common
-RUN apt-get install -y nodejs xorg xterm
+RUN apt-get install -y nodejs xorg xterm 
+RUN apt-get install -y xserver-xorg-video-openchrome xserver-xorg-video-fbdev libunwind-dev
 
 RUN mkdir -p /output/iso/boot
 RUN mkdir /initrd
