@@ -1,0 +1,2 @@
+[kernel]
+path = "target/x86_64-coreboot/release/coreboot"
