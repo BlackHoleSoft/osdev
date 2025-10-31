@@ -4,7 +4,9 @@
 #include "std/mem.h"
 #include "std/ata.h"
 #include "std/fs.h"
+#include "std/newmem.h" 
 #include "wasmcool/wasmcool.h"
+#include "std/string.h"
 
 #define SCREEN_WIDTH 80
 #define SCREEN_HEIGHT 25
@@ -303,6 +305,91 @@ void test_wsvm() {
     println("WASM Cool VM test completed");
 }
 
+void test_newmem() {
+    println("Testing new memory allocation system...");
+    
+    // Print start address
+    print("Heap start address: 0x");
+    println(num_to_str((int)0x2000000, 16));
+    print("Heap size: ");
+    println(num_to_str(0x1000000, 10));
+    println("");
+    
+    // Allocate different sized memory blocks
+    void* ptr1 = malloc(512);  // 512 bytes
+    print("Allocated 512 bytes at: 0x");
+    println(num_to_str((int)ptr1, 16));
+    
+    void* ptr2 = malloc(1024);  // 1KB
+    print("Allocated 1KB at: 0x");
+    println(num_to_str((int)ptr2, 16));
+    
+    void* ptr3 = malloc(16384);  // 16KB
+    print("Allocated 16KB at: 0x");
+    println(num_to_str((int)ptr3, 16));
+    println("");
+    
+    // Fill blocks with test data
+    if (ptr1) {
+        char* data1 = (char*)ptr1;
+        for (int i = 0; i < 10; i++) {
+            data1[i] = 'A' + i;
+        }
+        data1[10] = '\0';
+        print("Data in first block: ");
+        println(data1);
+    }
+    
+    if (ptr2) {
+        char* data2 = (char*)ptr2;
+        for (int i = 0; i < 10; i++) {
+            data2[i] = 'a' + i;
+        }
+        data2[10] = '\0';
+        print("Data in second block: ");
+        println(data2);
+    }
+    
+    if (ptr3) {
+        char* data3 = (char*)ptr3;
+        for (int i = 0; i < 10; i++) {
+            data3[i] = '0' + i;
+        }
+        data3[10] = '\0';
+        print("Data in third block: ");
+        println(data3);
+    }
+    println("");
+    
+    // Print heap information
+    print("Heap used: ");
+    print(num_to_str(get_heap_used(), 10));
+    print(" bytes, Heap free: ");
+    print(num_to_str(get_heap_free(), 10));
+    println(" bytes");
+    println("");
+    
+    // Free the first block
+    print("Freeing first block at: 0x");
+    println(num_to_str((int)ptr1, 16));
+    free(ptr1);
+    ptr1 = NULL;
+    println("");
+    
+    // Print heap information again after freeing
+    print("After freeing first block:");
+    println("");
+    print("Heap used: ");
+    print(num_to_str(get_heap_used(), 10));
+    print(" bytes, Heap free: ");
+    print(num_to_str(get_heap_free(), 10));
+    println(" bytes");
+    println("");
+    
+    print("New memory allocation test completed");
+    println("");
+}
+
 void kmain() {
     println("Strelka System");
     print_cursor_enable(0, 0);
@@ -320,6 +407,7 @@ void kmain() {
     // print(SCREEN_WIDTH * 2 + 18, memsize > 0 ? num_to_str(memsize / 1024 / 1024, 10) : ">=4Gb");
 
     mem_init();
+    newmem_init((void*)0x2000000, 0x1000000);   // from 32mb, 16mb size
 
     //user_init();
 
@@ -373,16 +461,18 @@ void kmain() {
     // test_fs();
 
     clear();
-    test_leb(0);
-    test_leb(15);
-    test_leb(45600666);
+    // test_leb(0);
+    // test_leb(15);
+    // test_leb(45600666);
 
     for (int i=1; i > 0; i++);
     for (int i=1; i > 0; i++);
     for (int i=1; i > 0; i++);
 
     clear();
-    test_wsvm();
+    test_newmem();  // Testing new memory allocation system
+
+    // test_wsvm();
 
     // println("");
     // println("End of tests");
