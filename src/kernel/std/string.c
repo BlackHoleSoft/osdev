@@ -74,3 +74,22 @@ bool str_compare(string str1, string str2) {
     }
     return false;
 }
+
+// Implementation of memset - fills memory with a constant byte
+void* memset(void* ptr, int value, size_t num) {
+    unsigned char* p = (unsigned char*)ptr;
+    for (size_t i = 0; i < num; i++) {
+        p[i] = (unsigned char)value;
+    }
+    return ptr;
+}
+
+// Implementation of memcpy - copies memory from one location to another
+void* memcpy(void* destination, const void* source, size_t num) {
+    unsigned char* dest = (unsigned char*)destination;
+    const unsigned char* src = (const unsigned char*)source;
+    for (size_t i = 0; i < num; i++) {
+        dest[i] = src[i];
+    }
+    return destination;
+}

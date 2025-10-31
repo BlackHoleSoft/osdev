@@ -183,27 +183,27 @@ void test_disk() {
     mem_free(contents);
 }
 
-void test_js() {
-    struct MemoryTablesList* mem = (struct MemoryTablesList*)MEM_DATA_ADDR;
-    struct JsseyState* state = ((struct JsseyState**)(mem->process_list))[0];
+// void test_js() {
+//     struct MemoryTablesList* mem = (struct MemoryTablesList*)MEM_DATA_ADDR;
+//     struct JsseyState* state = ((struct JsseyState**)(mem->process_list))[0];
 
-    string code = mem_10kb();
-    ata_read_sectors(code, 0x4, 16);
+//     string code = mem_10kb();
+//     ata_read_sectors(code, 0x4, 16);
 
-    for (int i = 0; i<512; i++) {
-        print(char_to_str(code[i]));
-    }
-    print("\n");
+//     for (int i = 0; i<512; i++) {
+//         print(char_to_str(code[i]));
+//     }
+//     print("\n");
 
-    for (int i=1; i>0; i++);
-    clear();
+//     for (int i=1; i>0; i++);
+//     clear();
 
-    double result = js_run(code, state, 1000000000, true);
-    print("End of execution. Result = ");
-    println(num_to_str((int)result, 10));
-    print("Used memory: ");
-    println(num_to_str(mem_get_overall_used(), 10));
-}
+//     double result = js_run(code, state, 1000000000, true);
+//     print("End of execution. Result = ");
+//     println(num_to_str((int)result, 10));
+//     print("Used memory: ");
+//     println(num_to_str(mem_get_overall_used(), 10));
+// }
 
 void test_fs() {
     struct FSTableItem* tmpfile;    
