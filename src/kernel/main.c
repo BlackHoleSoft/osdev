@@ -3,7 +3,6 @@
 #include "std/keyboard.h"
 #include "std/mem.h"
 #include "std/ata.h"
-#include "jssey/jsmain.h"
 #include "std/fs.h"
 #include "wasm/leb.h"
 #include "wasm/wsvm.h"
@@ -21,53 +20,53 @@ struct StateGlobal {
     bool initialized;
 };
 
-void user_init() {
-    struct MemoryTablesList* mem = (struct MemoryTablesList*)MEM_DATA_ADDR;
+// void user_init() {
+//     struct MemoryTablesList* mem = (struct MemoryTablesList*)MEM_DATA_ADDR;
 
-    clear();
+//     clear();
 
-    string code = mem_10kb();
-    ata_read_sectors(code, 0x4, 16);
+//     string code = mem_10kb();
+//     ata_read_sectors(code, 0x4, 16);
 
-    struct JsseyState** process_list = mem_10kb();
+//     struct JsseyState** process_list = mem_10kb();
 
-    struct JsseyState* main_process_state = mem_512();
-    process_list[0] = main_process_state;
-    mem->process_list = process_list;
+//     struct JsseyState* main_process_state = mem_512();
+//     process_list[0] = main_process_state;
+//     mem->process_list = process_list;
 
-    // Run main process
-    main_process_state->is_initialized = false;
-    main_process_state->is_running = false;
-    main_process_state->is_finished = false;
-    js_run(code, main_process_state, 100, false);
+//     // Run main process
+//     main_process_state->is_initialized = false;
+//     main_process_state->is_running = false;
+//     main_process_state->is_finished = false;
+//     js_run(code, main_process_state, 100, false);
     
-}
+// }
 
-void user_loop() {
-    struct MemoryTablesList* mem = (struct MemoryTablesList*)MEM_DATA_ADDR;
-    char keyboard_symbol = kbd_symbol(mem->kbd_keycode);
-    struct JsseyState* state = ((struct JsseyState**)(mem->process_list))[0];
+// void user_loop() {
+//     struct MemoryTablesList* mem = (struct MemoryTablesList*)MEM_DATA_ADDR;
+//     char keyboard_symbol = kbd_symbol(mem->kbd_keycode);
+//     struct JsseyState* state = ((struct JsseyState**)(mem->process_list))[0];
 
-    // update state for each process
-    js_propset(state, "keycode", state->memory + 2, (double)mem->kbd_keycode, VAR_TYPE_NUMBER);
-    double char_address = 0;
-    u8 char_type = VAR_TYPE_POINTER;
-    js_propget(state, "keyChar", state->memory + 2, &char_address, &char_type);
-    *(char*)(state->memory + (int)char_address) = keyboard_symbol;
+//     // update state for each process
+//     js_propset(state, "keycode", state->memory + 2, (double)mem->kbd_keycode, VAR_TYPE_NUMBER);
+//     double char_address = 0;
+//     u8 char_type = VAR_TYPE_POINTER;
+//     js_propget(state, "keyChar", state->memory + 2, &char_address, &char_type);
+//     *(char*)(state->memory + (int)char_address) = keyboard_symbol;
 
-    // run a piece of code for each process
-    if (state->is_finished == false)
-        js_run(NULL, state, 20, false);
+//     // run a piece of code for each process
+//     if (state->is_finished == false)
+//         js_run(NULL, state, 20, false);
 
-    if (state->is_running == false && state->is_finished == false) {
-        state->is_finished = true;
-        print("Process 0 exit: ");
-        print(num_to_str((int)state->result, 10));
-        print("  Error code: 0x");
-        println(num_to_str(state->error, 16));
-    }
+//     if (state->is_running == false && state->is_finished == false) {
+//         state->is_finished = true;
+//         print("Process 0 exit: ");
+//         print(num_to_str((int)state->result, 10));
+//         print("  Error code: 0x");
+//         println(num_to_str(state->error, 16));
+//     }
 
-}
+// }
 
 void sys_loop() {
     struct MemoryTablesList* mem = (struct MemoryTablesList*)MEM_DATA_ADDR;
