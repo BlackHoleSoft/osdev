@@ -4,8 +4,7 @@
 #include "std/mem.h"
 #include "std/ata.h"
 #include "std/fs.h"
-#include "wasm/leb.h"
-#include "wasm/wsvm.h"
+#include "wasmcool/wasmcool.h"
 
 #define SCREEN_WIDTH 80
 #define SCREEN_HEIGHT 25
@@ -283,16 +282,25 @@ void test_leb(long initial) {
     println("End test");
 }
 
+// void test_wsvm() {
+//     u8* module = mem_10kb();
+//     ata_read_sectors(module, 0x1, 1);
+
+//     print(".");
+//     println(module + 1);
+
+//     wsvmStart(module);
+
+//     println("OK");
+// }
+
 void test_wsvm() {
-    u8* module = mem_10kb();
-    ata_read_sectors(module, 0x1, 1);
+    print("Testing WASM Cool VM...");
+    println("");
+    
+    wasm_test();
 
-    print(".");
-    println(module + 1);
-
-    wsvmStart(module);
-
-    println("OK");
+    println("WASM Cool VM test completed");
 }
 
 void kmain() {

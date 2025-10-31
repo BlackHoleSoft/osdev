@@ -51,6 +51,11 @@ void print(string str) {
     print_colored(str, 0x2);
 }
 
+void print_int(long num) {
+    string num_str = num_to_str(num, 10);
+    print(num_str);
+}
+
 void println(string str) {
     print(str);
     print("\n");
