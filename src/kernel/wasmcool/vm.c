@@ -199,12 +199,37 @@ int wasm_vm_execute_code(wasm_vm_t *vm, const uint8_t *code, size_t code_size) {
 
 // Main run function for the VM
 int wasm_vm_run_func_index(wasm_vm_t *vm, uint32_t func_index) {
-    // For now, we'll just return success
-    // In a complete implementation, we would look up the function by index
-    // and execute its code
+    if (!vm || !vm->module) {
+        println("VM: Invalid VM or module\n");
+        return 0;
+    }
+    
+    // Check if the function index is valid
+    if (func_index >= vm->module->func_count) {
+        println("VM: Function index out of bounds\n");
+        return 0;
+    }
+    
+    // Find the corresponding code for this function
+    // The function index in the code section might be different from the function index in the function section
+    // In a full implementation, we would need to map these properly
+    uint32_t code_index = func_index;
+    if (code_index >= vm->module->code_count) {
+        println("VM: No code found for function\n");
+        return 0;
+    }
+    
+    // Get the function definition
+    wasm_function_def_t *func_def = &vm->module->codes[code_index];
+    if (!func_def->code) {
+        println("VM: Function has no code\n");
+        return 0;
+    }
+    
     println("VM: Running function index ");
     print_int(func_index);
     println("\n");
     
-    return 1;
+    // Execute the function code
+    return wasm_vm_execute_code(vm, func_def->code, func_def->code_size);
 }

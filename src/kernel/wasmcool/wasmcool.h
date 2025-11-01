@@ -19,6 +19,10 @@ typedef signed short int16_t;
 typedef signed int int32_t;
 typedef signed long long int64_t;
 
+// Define constants
+#define UINT32_MAX 0xFFFFFFFF
+#define UINT64_MAX 0xFFFFFFFFFFFFFFFFULL
+
 // Data types
 typedef enum {
     WASM_I32 = 0x7f,
@@ -227,10 +231,34 @@ int32_t decode_i32leb128(const uint8_t **data, const uint8_t *end);
 uint64_t decode_u64leb128(const uint8_t **data, const uint8_t *end);
 int64_t decode_i64leb128(const uint8_t **data, const uint8_t *end);
 
+// Function type structure
+typedef struct {
+    uint8_t form;           // Should be WASM_FUNC (0x60)
+    uint32_t param_count;
+    uint8_t *param_types;
+    uint32_t result_count;
+    uint8_t *result_types;
+} wasm_function_type_t;
+
+// Function definition structure
+typedef struct {
+    uint32_t type_index;
+    uint32_t code_size;
+    const uint8_t *code;
+} wasm_function_def_t;
+
 // WASM module structure
 typedef struct {
     uint32_t magic;
     uint32_t version;
+    uint32_t type_count;
+    wasm_function_type_t *types;
+    uint32_t import_count;
+    uint32_t func_count;
+    uint32_t *func_types;   // Maps function index to type index
+    uint32_t code_count;
+    wasm_function_def_t *codes;  // Function code definitions
+    uint32_t start_func_index;   // Optional start function index
     // Sections will be parsed and stored here
 } wasm_module_t;
 
