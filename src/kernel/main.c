@@ -299,8 +299,14 @@ void test_leb(long initial) {
 void test_wsvm() {
     print("Testing WASM Cool VM...");
     println("");
+
+    u8* module = mem_10kb();
+    ata_read_sectors(module, 0x0, 1);
+
+    print(".");
+    println(module + 1);
     
-    wasm_test();
+    wasm_test(module);
 
     println("WASM Cool VM test completed");
 }
@@ -470,9 +476,9 @@ void kmain() {
     for (int i=1; i > 0; i++);
 
     clear();
-    test_newmem();  // Testing new memory allocation system
+    // test_newmem();  // Testing new memory allocation system
 
-    // test_wsvm();
+    test_wsvm();
 
     // println("");
     // println("End of tests");

@@ -21,7 +21,7 @@ typedef signed long long int64_t;
 
 // Define constants
 #define UINT32_MAX 0xFFFFFFFF
-#define UINT64_MAX 0xFFFFFFFFFFFFFFFFULL
+#define UINT64_MAX 0xFFFFFFFFFFFFFFFF
 
 // Data types
 typedef enum {
@@ -247,6 +247,12 @@ typedef struct {
     const uint8_t *code;
 } wasm_function_def_t;
 
+// Export structure for function exports
+typedef struct {
+    uint32_t index;
+    const char *name;
+} wasm_export_t;
+
 // WASM module structure
 typedef struct {
     uint32_t magic;
@@ -256,6 +262,8 @@ typedef struct {
     uint32_t import_count;
     uint32_t func_count;
     uint32_t *func_types;   // Maps function index to type index
+    uint32_t export_count;
+    wasm_export_t *exports; // Array of exported functions
     uint32_t code_count;
     wasm_function_def_t *codes;  // Function code definitions
     uint32_t start_func_index;   // Optional start function index
@@ -290,6 +298,6 @@ int vm_stack_is_empty(vm_stack_t *stack);
 int vm_stack_is_full(vm_stack_t *stack);
 
 // Test function
-void wasm_test();
+void wasm_test(uint8_t *data);
 
 #endif // WASMCOOL_H

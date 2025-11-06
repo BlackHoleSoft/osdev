@@ -197,6 +197,23 @@ int wasm_vm_execute_code(wasm_vm_t *vm, const uint8_t *code, size_t code_size) {
     return 1;
 }
 
+// Find function index by name
+int wasm_find_function_by_name(wasm_module_t *module, const char *func_name) {
+    if (!module || !func_name) {
+        return -1;
+    }
+    
+    // Look through the exports to find the function by name
+    for (uint32_t i = 0; i < module->export_count; i++) {
+        if (module->exports[i].name && str_compare(module->exports[i].name, func_name) == 0) {
+            return module->exports[i].index;
+        }
+    }
+    
+    // If not found in exports, return -1
+    return -1;
+}
+
 // Main run function for the VM
 int wasm_vm_run_func_index(wasm_vm_t *vm, uint32_t func_index) {
     if (!vm || !vm->module) {
@@ -232,4 +249,24 @@ int wasm_vm_run_func_index(wasm_vm_t *vm, uint32_t func_index) {
     
     // Execute the function code
     return wasm_vm_execute_code(vm, func_def->code, func_def->code_size);
+}
+
+// Run a function by name
+int wasm_vm_run(wasm_vm_t *vm, const char *func_name) {
+    if (!vm || !vm->module || !func_name) {
+        println("VM: Invalid VM, module or function name\n");
+        return 0;
+    }
+    
+    // Find the function index by name
+    int func_index = wasm_find_function_by_name(vm->module, func_name);
+    if (func_index < 0) {
+        println("VM: Function not found: ");
+        println(func_name);
+        println("\n");
+        return 0;
+    }
+    
+    // Run the function by its index
+    return wasm_vm_run_func_index(vm, (uint32_t)func_index);
 }

@@ -43,6 +43,8 @@ void wasm_module_init(wasm_module_t *module) {
     module->import_count = 0;
     module->func_count = 0;
     module->func_types = NULL;
+    module->export_count = 0;
+    module->exports = NULL;
     module->code_count = 0;
     module->codes = NULL;
     module->start_func_index = UINT32_MAX;  // Invalid index by default
@@ -192,6 +194,63 @@ int wasm_parse_start_section(const uint8_t **data, const uint8_t *end, wasm_modu
     return 1;
 }
 
+// Parse export section
+int wasm_parse_export_section(const uint8_t **data, const uint8_t *end, wasm_module_t *module) {
+    uint32_t count = decode_u32leb128(data, end);
+    if (*data >= end) return 0;
+    
+    module->export_count = count;
+    if (count > 0) {
+        module->exports = (wasm_export_t*)malloc(sizeof(wasm_export_t) * count);
+        if (!module->exports) {
+            println("WASM: Failed to allocate memory for exports\n");
+            return 0;
+        }
+        
+        for (uint32_t i = 0; i < count; i++) {
+            // Read the name of the export
+            uint32_t name_len = decode_u32leb128(data, end);
+            if (*data + name_len >= end) return 0;
+            
+            // Allocate memory for the name and copy it
+            char *name = (char*)malloc(name_len + 1);
+            if (!name) {
+                println("WASM: Failed to allocate memory for export name\n");
+                return 0;
+            }
+            
+            for (uint32_t j = 0; j < name_len; j++) {
+                name[j] = (*data)[j];
+            }
+            name[name_len] = '\0';
+            (*data) += name_len;
+            
+            // Read the export kind (we only handle functions for now)
+            uint8_t export_kind = **data;
+            (*data)++;
+            
+            if (export_kind != 0x00) { // 0x00 is function export
+                println("WASM: Unsupported export kind\n");
+                free(name);
+                return 0;
+            }
+            
+            // Read the function index
+            uint32_t func_index = decode_u32leb128(data, end);
+            if (*data > end) {
+                free(name);
+                return 0;
+            }
+            
+            // Store the export information
+            module->exports[i].name = name;
+            module->exports[i].index = func_index;
+        }
+    }
+    
+    return 1;
+}
+
 // Parse a single section
 int wasm_parse_section(const uint8_t **data, const uint8_t *end, uint8_t section_id, wasm_module_t *module) {
     // Get the size of the section
@@ -240,8 +299,9 @@ int wasm_parse_section(const uint8_t **data, const uint8_t *end, uint8_t section
             break;
         case WASM_SECTION_EXPORT:
             println("WASM: Found export section\n");
-            // Skip for now
-            *data = section_end;
+            if (!wasm_parse_export_section(data, section_end, module)) {
+                return 0;
+            }
             break;
         case WASM_SECTION_START:
             println("WASM: Found start section\n");
@@ -341,7 +401,18 @@ void wasm_module_destroy(wasm_module_t *module) {
         module->codes = NULL;
     }
     
+    if (module->exports) {
+        for (uint32_t i = 0; i < module->export_count; i++) {
+            if (module->exports[i].name) {
+                free((void*)module->exports[i].name);
+            }
+        }
+        free(module->exports);
+        module->exports = NULL;
+    }
+    
     module->type_count = 0;
     module->func_count = 0;
+    module->export_count = 0;
     module->code_count = 0;
 }

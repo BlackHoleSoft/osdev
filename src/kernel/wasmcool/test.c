@@ -68,7 +68,7 @@ static const uint8_t test_main_module[] = {
 };
 
 // Test function to run the WASM VM
-void wasm_test() {
+void wasm_test(uint8_t *data) {
     println("WASM: Starting VM test\n");
     
     // Create a VM instance
