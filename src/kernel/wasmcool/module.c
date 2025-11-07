@@ -6,7 +6,7 @@
 // Function to validate the WASM header
 int wasm_validate_header(const uint8_t *data, size_t size) {
     if (size < 8) {
-        println("WASM: Module too small to contain header\n");
+        println("WASM: Module too small to contain header");
         return 0;
     }
     
@@ -21,12 +21,12 @@ int wasm_validate_header(const uint8_t *data, size_t size) {
                        ((uint32_t)data[7] << 24);
     
     if (magic != WASM_MAGIC) {
-        println("WASM: Invalid magic number\n");
+        println("WASM: Invalid magic number");
         return 0;
     }
     
     if (version != WASM_VERSION) {
-        println("WASM: Unsupported version\n");
+        println("WASM: Unsupported version");
         return 0;
     }
     
@@ -59,7 +59,7 @@ int wasm_parse_type_section(const uint8_t **data, const uint8_t *end, wasm_modul
     if (count > 0) {
         module->types = (wasm_function_type_t*)malloc(sizeof(wasm_function_type_t) * count);
         if (!module->types) {
-            println("WASM: Failed to allocate memory for types\n");
+            println("WASM: Failed to allocate memory for types");
             return 0;
         }
         
@@ -70,7 +70,7 @@ int wasm_parse_type_section(const uint8_t **data, const uint8_t *end, wasm_modul
             (*data)++;
             
             if (module->types[i].form != WASM_FUNC) {
-                println("WASM: Unsupported function form\n");
+                println("WASM: Unsupported function form");
                 return 0;
             }
             
@@ -80,7 +80,7 @@ int wasm_parse_type_section(const uint8_t **data, const uint8_t *end, wasm_modul
             if (module->types[i].param_count > 0) {
                 module->types[i].param_types = (uint8_t*)malloc(module->types[i].param_count);
                 if (!module->types[i].param_types) {
-                    println("WASM: Failed to allocate memory for param types\n");
+                    println("WASM: Failed to allocate memory for param types");
                     return 0;
                 }
                 
@@ -99,7 +99,7 @@ int wasm_parse_type_section(const uint8_t **data, const uint8_t *end, wasm_modul
             if (module->types[i].result_count > 0) {
                 module->types[i].result_types = (uint8_t*)malloc(module->types[i].result_count);
                 if (!module->types[i].result_types) {
-                    println("WASM: Failed to allocate memory for result types\n");
+                    println("WASM: Failed to allocate memory for result types");
                     return 0;
                 }
                 
@@ -126,13 +126,15 @@ int wasm_parse_function_section(const uint8_t **data, const uint8_t *end, wasm_m
     if (count > 0) {
         module->func_types = (uint32_t*)malloc(sizeof(uint32_t) * count);
         if (!module->func_types) {
-            println("WASM: Failed to allocate memory for function types\n");
+            println("WASM: Failed to allocate memory for function types");
             return 0;
         }
         
         for (uint32_t i = 0; i < count; i++) {
             module->func_types[i] = decode_u32leb128(data, end);
-            if (*data >= end) return 0;
+            print("fn:"); print_int(module->func_types[i]);
+            println("");
+            if (*data > end) return 0;
         }
     }
     
@@ -148,7 +150,7 @@ int wasm_parse_code_section(const uint8_t **data, const uint8_t *end, wasm_modul
     if (count > 0) {
         module->codes = (wasm_function_def_t*)malloc(sizeof(wasm_function_def_t) * count);
         if (!module->codes) {
-            println("WASM: Failed to allocate memory for function codes\n");
+            println("WASM: Failed to allocate memory for function codes");
             return 0;
         }
         
@@ -203,7 +205,7 @@ int wasm_parse_export_section(const uint8_t **data, const uint8_t *end, wasm_mod
     if (count > 0) {
         module->exports = (wasm_export_t*)malloc(sizeof(wasm_export_t) * count);
         if (!module->exports) {
-            println("WASM: Failed to allocate memory for exports\n");
+            println("WASM: Failed to allocate memory for exports");
             return 0;
         }
         
@@ -215,7 +217,7 @@ int wasm_parse_export_section(const uint8_t **data, const uint8_t *end, wasm_mod
             // Allocate memory for the name and copy it
             char *name = (char*)malloc(name_len + 1);
             if (!name) {
-                println("WASM: Failed to allocate memory for export name\n");
+                println("WASM: Failed to allocate memory for export name");
                 return 0;
             }
             
@@ -230,7 +232,7 @@ int wasm_parse_export_section(const uint8_t **data, const uint8_t *end, wasm_mod
             (*data)++;
             
             if (export_kind != 0x00) { // 0x00 is function export
-                println("WASM: Unsupported export kind\n");
+                println("WASM: Unsupported export kind");
                 free(name);
                 return 0;
             }
@@ -256,7 +258,7 @@ int wasm_parse_section(const uint8_t **data, const uint8_t *end, uint8_t section
     // Get the size of the section
     uint32_t size = decode_u32leb128(data, end);
     if (*data + size > end) {
-        println("WASM: Section size exceeds module bounds\n");
+        println("WASM: Section size exceeds module bounds");
         return 0;
     }
     
@@ -266,79 +268,79 @@ int wasm_parse_section(const uint8_t **data, const uint8_t *end, uint8_t section
     // Process section based on its ID
     switch (section_id) {
         case WASM_SECTION_TYPE:
-            println("WASM: Found type section\n");
+            println("WASM: Found type section");
             if (!wasm_parse_type_section(data, section_end, module)) {
                 return 0;
             }
             break;
         case WASM_SECTION_IMPORT:
-            println("WASM: Found import section\n");
+            println("WASM: Found import section");
             // Skip for now - we'll implement import parsing later
             *data = section_end;
             break;
         case WASM_SECTION_FUNCTION:
-            println("WASM: Found function section\n");
+            println("WASM: Found function section");
             if (!wasm_parse_function_section(data, section_end, module)) {
                 return 0;
             }
             break;
         case WASM_SECTION_TABLE:
-            println("WASM: Found table section\n");
+            println("WASM: Found table section");
             // Skip for now
             *data = section_end;
             break;
         case WASM_SECTION_MEMORY:
-            println("WASM: Found memory section\n");
+            println("WASM: Found memory section");
             // Skip for now
             *data = section_end;
             break;
         case WASM_SECTION_GLOBAL:
-            println("WASM: Found global section\n");
+            println("WASM: Found global section");
             // Skip for now
             *data = section_end;
             break;
         case WASM_SECTION_EXPORT:
-            println("WASM: Found export section\n");
+            println("WASM: Found export section");
             if (!wasm_parse_export_section(data, section_end, module)) {
                 return 0;
             }
             break;
         case WASM_SECTION_START:
-            println("WASM: Found start section\n");
+            println("WASM: Found start section");
             if (!wasm_parse_start_section(data, section_end, module)) {
                 return 0;
             }
             break;
         case WASM_SECTION_ELEMENT:
-            println("WASM: Found element section\n");
+            println("WASM: Found element section");
             // Skip for now
             *data = section_end;
             break;
         case WASM_SECTION_CODE:
-            println("WASM: Found code section\n");
+            println("WASM: Found code section");
             if (!wasm_parse_code_section(data, section_end, module)) {
                 return 0;
             }
             break;
         case WASM_SECTION_DATA:
-            println("WASM: Found data section\n");
+            println("WASM: Found data section");
             // Skip for now
             *data = section_end;
             break;
         case WASM_SECTION_CUSTOM:
-            println("WASM: Found custom section\n");
+            println("WASM: Found custom section");
             // Skip for now
             *data = section_end;
             break;
         default:
-            println("WASM: Unknown section ID\n");
+            println("WASM: Unknown section ID");
             *data = section_end;
             break;
     }
     
     // Ensure we're at the end of the section
     if (*data != section_end) {
-        println("WASM: Section parsing error - unexpected position\n");
+        println("WASM: Section parsing error - unexpected position");
         return 0;
     }
     
@@ -365,7 +367,10 @@ int wasm_parse_module(wasm_module_t *module, const uint8_t *data, size_t size) {
     while (ptr < end) {
         uint8_t section_id = *ptr;
         ptr++;
-        
+
+        // похоже проблема в том, что при парсинге функций не увеличивается ptr
+
+        // Parse the section content
         if (!wasm_parse_section(&ptr, end, section_id, module)) {
             // Clean up allocated memory on error
             wasm_module_destroy(module);
