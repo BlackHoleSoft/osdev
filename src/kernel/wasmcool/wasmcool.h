@@ -22,6 +22,7 @@ typedef signed long long int64_t;
 // Define constants
 #define UINT32_MAX 0xFFFFFFFF
 #define UINT64_MAX 0xFFFFFFFFFFFFFFFF
+#define INT32_MIN -2147483648
 
 // Data types
 typedef enum {

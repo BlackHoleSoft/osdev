@@ -158,6 +158,60 @@ int vm_execute_instruction(wasm_vm_t *vm, const uint8_t **code_ptr, const uint8_
             break;
         }
         
+        case WASM_OP_I32_DIV_S: {
+            // Pop two values, divide first by second (signed), and push result
+            if (vm->stack.top < 1) {
+                println("VM: Not enough operands for i32.div_s\n");
+                return 0;
+            }
+            
+            int32_t b = vm_stack_pop(&vm->stack);
+            int32_t a = vm_stack_pop(&vm->stack);
+            
+            if (b == 0) {
+                println("VM: Division by zero error for i32.div_s\n");
+                return 0;
+            }
+            
+            if (a == INT32_MIN && b == -1) {
+                println("VM: Integer overflow error for i32.div_s\n");
+                return 0;
+            }
+            
+            int32_t result = a / b;
+            
+            if (!vm_stack_push(&vm->stack, result)) {
+                return 0;
+            }
+            break;
+        }
+        
+        case WASM_OP_I32_DIV_U: {
+            // Pop two values, divide first by second (unsigned), and push result
+            if (vm->stack.top < 1) {
+                println("VM: Not enough operands for i32.div_u\n");
+                return 0;
+            }
+            
+            int32_t b = vm_stack_pop(&vm->stack);
+            int32_t a = vm_stack_pop(&vm->stack);
+            
+            if (b == 0) {
+                println("VM: Division by zero error for i32.div_u\n");
+                return 0;
+            }
+            
+            // Cast to unsigned for unsigned division
+            uint32_t ua = (uint32_t)a;
+            uint32_t ub = (uint32_t)b;
+            uint32_t result = ua / ub;
+            
+            if (!vm_stack_push(&vm->stack, (int32_t)result)) {
+                return 0;
+            }
+            break;
+        }
+        
         case WASM_OP_DROP: {
             // Drop the top value from the stack
             if (vm_stack_is_empty(&vm->stack)) {

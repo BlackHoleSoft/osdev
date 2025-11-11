@@ -16,7 +16,7 @@ void wasm_test(uint8_t *data) {
     println("WASM: VM created successfully\n");
     
     // Load the test module
-    if (!wasm_vm_load_module(vm, data, 41)) {
+    if (!wasm_vm_load_module(vm, data, 50)) {
         println("WASM: Failed to load test module\n");
         wasm_vm_destroy(vm);
         return;
