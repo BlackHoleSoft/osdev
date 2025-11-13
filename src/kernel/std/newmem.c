@@ -1,5 +1,6 @@
 #include "newmem.h"
 #include "string.h"
+#include "print.h"
 
 // Static heap information structure
 static struct HeapInfo heap_info = {0};
@@ -186,4 +187,60 @@ size_t get_heap_free() {
     }
     
     return free;
+}
+
+void print_blocks() {
+    struct MemBlockHeader* current = heap_info.first_block;
+    char buffer[1024]; // Temporary buffer to build the output string
+    int pos = 0;
+    
+    while (current != NULL) {
+        // Format the current block information
+        char temp[64]; // Buffer for individual block info
+        int len = 0;
+        
+        // Convert current->size to string (simple integer to string conversion)
+        size_t size = current->size;
+        if (size == 0) {
+            temp[len++] = '0';
+        } else {
+            char temp_size[20];
+            int temp_pos = 0;
+            while (size > 0) {
+                temp_size[temp_pos++] = '0' + (size % 10);
+                size /= 10;
+            }
+            // Reverse the digits
+            for (int i = temp_pos - 1; i >= 0; i--) {
+                temp[len++] = temp_size[i];
+            }
+        }
+        
+        temp[len++] = ';';
+        
+        // Add is_free value (0 or 1)
+        temp[len++] = '0' + current->is_free;
+        
+        // Add arrow if there's a next block
+        if (current->next != NULL) {
+            temp[len++] = '-';
+            temp[len++] = '>';
+        } else {
+            temp[len] = '\0'; // Null terminate for the last block
+        }
+        
+        // Copy the formatted block info to the main buffer
+        for (int i = 0; i < len; i++) {
+            buffer[pos++] = temp[i];
+        }
+        
+        current = current->next;
+    }
+    
+    // Null terminate the final string
+    buffer[pos] = '\0';
+    
+    // Print the final string
+    print(buffer);
+    println("");
 }

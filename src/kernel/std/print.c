@@ -1,5 +1,6 @@
 #include "types.h"
 #include "print.h"
+#include "newmem.h"
 #include "mem.h"
 #include "io.h"
 

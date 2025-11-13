@@ -1,5 +1,5 @@
 #include "string.h"
-#include "mem.h"
+#include "newmem.h"
 
 int str_len(string str) {
     int len;
@@ -10,7 +10,7 @@ int str_len(string str) {
 string num_to_str(long num, int r) {
     if (num == 0) return "0";
 
-    string str = mem_512();
+    string str = malloc(512);
     str[511] = 0;
     int n = num > 0 ? num : -num;
     int i = 0;   
@@ -29,7 +29,7 @@ string num_to_str(long num, int r) {
     }
 
     str[end] = '\0';
-    mem_free(str);
+    free(str);
     return (string)((ulong)str + (end - i));
 }
 

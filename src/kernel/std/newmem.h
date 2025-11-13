@@ -29,5 +29,6 @@ void free(void* ptr);
 // Utility functions
 size_t get_heap_used();
 size_t get_heap_free();
+void print_blocks();
 
 #endif

@@ -1,16 +1,16 @@
 #include "fs.h"
 #include "ata.h"
-#include "mem.h"
+#include "newmem.h"
 #include "string.h"
 
 struct FSTableItem* fs_get_file(int sector) {
-    struct FSTableItem* file = mem_512();
+    struct FSTableItem* file = malloc(512);
     ata_read_sectors((u8*)file, sector, 1);
     return file;
 }
 
 char* fs_get_file_contents(struct FSTableItem* file) {
-    char* buffer = mem_10kb();
+    char* buffer = malloc(10 * 1024);
     // read no more than 10 kb
     for (int i=0; i<file->size && i<20; i++) {
         ata_read_sectors(buffer + i * 512, file->sectors[i], 1);        
@@ -21,7 +21,7 @@ char* fs_get_file_contents(struct FSTableItem* file) {
 void fs_add_file(struct FSTableItem* file, char* contents, int content_length) {
     if (content_length >= 160 * 512) return;
 
-    char* tmp_data = mem_512();
+    char* tmp_data = malloc(512);
     int header_sector = 0;
     int max_sector = 0;
     for (int i=FS_TABLE_START_SECTOR; i<FS_TABLE_SIZE; i++) {
@@ -37,7 +37,7 @@ void fs_add_file(struct FSTableItem* file, char* contents, int content_length) {
             }
         }
     }
-    mem_free(tmp_data);
+    free(tmp_data);
 
     // write data
     int length_sec = content_length / 512 + 1;
@@ -55,7 +55,7 @@ void fs_add_file(struct FSTableItem* file, char* contents, int content_length) {
 }
 
 void fs_get_file_by_name(struct FSTableItem* out, string name) {
-    char* tmp_data = mem_512();    
+    char* tmp_data = malloc(512);    
     for (int i=FS_TABLE_START_SECTOR; i<FS_TABLE_SIZE; i++) {
         ata_read_sectors(tmp_data, i, 1);
         if (str_compare(name, tmp_data)) {
@@ -66,13 +66,13 @@ void fs_get_file_by_name(struct FSTableItem* out, string name) {
             return;
         }
     }
-    mem_free(tmp_data);
+    free(tmp_data);
 }
 
 void fs_update_file(struct FSTableItem* file, string content, int content_length) {
     if (content_length >= 160 * 512) return;
 
-    char* tmp_data = mem_512();  
+    char* tmp_data = malloc(512);  
     struct FSTableItem* tmpfile;
     int max_sector = 0;
     int current_sector = 0;
@@ -110,5 +110,5 @@ void fs_update_file(struct FSTableItem* file, string content, int content_length
         ata_write_sectors(current_sector, 1, (u8*)tmpfile);
     }
 
-    mem_free(tmp_data);
+    free(tmp_data);
 }

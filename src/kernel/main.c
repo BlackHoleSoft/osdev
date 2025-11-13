@@ -1,9 +1,9 @@
 #include "std/print.h"
 #include "std/io.h"
 #include "std/keyboard.h"
-#include "std/mem.h"
 #include "std/ata.h"
 #include "std/fs.h"
+#include "std/mem.h" 
 #include "std/newmem.h" 
 #include "wasmcool/wasmcool.h"
 #include "std/string.h"
@@ -21,60 +21,6 @@ struct StateGlobal {
     bool initialized;
 };
 
-// void user_init() {
-//     struct MemoryTablesList* mem = (struct MemoryTablesList*)MEM_DATA_ADDR;
-
-//     clear();
-
-//     string code = mem_10kb();
-//     ata_read_sectors(code, 0x4, 16);
-
-//     struct JsseyState** process_list = mem_10kb();
-
-//     struct JsseyState* main_process_state = mem_512();
-//     process_list[0] = main_process_state;
-//     mem->process_list = process_list;
-
-//     // Run main process
-//     main_process_state->is_initialized = false;
-//     main_process_state->is_running = false;
-//     main_process_state->is_finished = false;
-//     js_run(code, main_process_state, 100, false);
-    
-// }
-
-// void user_loop() {
-//     struct MemoryTablesList* mem = (struct MemoryTablesList*)MEM_DATA_ADDR;
-//     char keyboard_symbol = kbd_symbol(mem->kbd_keycode);
-//     struct JsseyState* state = ((struct JsseyState**)(mem->process_list))[0];
-
-//     // update state for each process
-//     js_propset(state, "keycode", state->memory + 2, (double)mem->kbd_keycode, VAR_TYPE_NUMBER);
-//     double char_address = 0;
-//     u8 char_type = VAR_TYPE_POINTER;
-//     js_propget(state, "keyChar", state->memory + 2, &char_address, &char_type);
-//     *(char*)(state->memory + (int)char_address) = keyboard_symbol;
-
-//     // run a piece of code for each process
-//     if (state->is_finished == false)
-//         js_run(NULL, state, 20, false);
-
-//     if (state->is_running == false && state->is_finished == false) {
-//         state->is_finished = true;
-//         print("Process 0 exit: ");
-//         print(num_to_str((int)state->result, 10));
-//         print("  Error code: 0x");
-//         println(num_to_str(state->error, 16));
-//     }
-
-// }
-
-void sys_loop() {
-    struct MemoryTablesList* mem = (struct MemoryTablesList*)MEM_DATA_ADDR;
-
-    mem->kbd_keycode = kbd_keycode();
-}
-
 void test_print() {
     clear();
     println("First string");
@@ -86,9 +32,9 @@ void test_print() {
     print("\n");
     println("println");
     println("Some string...");
-    string mem = mem_512();
+    string mem = malloc(512);
     println(str_concat(mem, "String ", "concatenation"));
-    mem_free(mem);
+    free(mem);
 }
 
 void test_numbers() {
@@ -108,58 +54,58 @@ void test_kb() {
         print_at(SCREEN_WIDTH * 0 + 20, num_to_str(kbd_keycode(), 16), 0x2);
 }
 
-void test_mem() {
-    string test512 = mem_512();
-    for (int i = 0; i<512; i++) {
-        test512[i] = 'q';
-    }
-    test512[8] = '\0';
+// void test_mem() {
+//     string test512 = malloc(512);
+//     for (int i = 0; i<512; i++) {
+//         test512[i] = 'q';
+//     }
+//     test512[8] = '\0';
 
-    string test10kb = mem_10kb();
-    if (test10kb == NULL)
-        println("test10kb is NULL!");
+//     string test10kb = malloc(10 * 1024);
+//     if (test10kb == NULL)
+//         println("test10kb is NULL!");
 
-    for (int i = 0; i<512; i++) {
-        test10kb[i] = 'w';
-    }
-    test10kb[8] = '\0';
+//     for (int i = 0; i<512; i++) {
+//         test10kb[i] = 'w';
+//     }
+//     test10kb[8] = '\0';
 
-    println(test512);
-    println(test10kb);
+//     println(test512);
+//     println(test10kb);
 
-    print(num_to_str(mem_used_size(), 10));
-    print(" / ");
-    println(num_to_str(mem_total_size(), 10));
-    print("  ");
+//     print(num_to_str(mem_used_size(), 10));
+//     print(" / ");
+//     println(num_to_str(mem_total_size(), 10));
+//     print("  ");
 
-    print(num_to_str((int)test512, 10));
-    print("  ");
+//     print(num_to_str((int)test512, 10));
+//     print("  ");
 
-    print(num_to_str((int)(string)mem_512(), 10));
-    print("  ");
-    print(num_to_str((int)(string)mem_512(), 10));
-    print("  ");
+//     print(num_to_str((int)(string)malloc(512), 10));
+//     print("  ");
+//     print(num_to_str((int)(string)malloc(512), 10));
+//     print("  ");
 
-    print(num_to_str((int)test10kb, 10));
-    print("  ");
+//     print(num_to_str((int)test10kb, 10));
+//     print("  ");
 
-    println(num_to_str(MEM_FIRST_TABLE_ADDR, 10));
+//     println(num_to_str(MEM_FIRST_TABLE_ADDR, 10));
     
-    print(num_to_str(mem_free(test512), 10));
-    print("  ");
-    println(num_to_str(mem_free(test10kb), 10));
+//     print(num_to_str(free(test512), 10));
+//     print("  ");
+//     println(num_to_str(free(test10kb), 10));
     
-    print(num_to_str((int)mem_512(), 10));
-    print("  ");
-    print(num_to_str((int)mem_512(), 10));
-    print("  ");
-    println(num_to_str((int)mem_512(), 10));
+//     print(num_to_str((int)malloc(512), 10));
+//     print("  ");
+//     print(num_to_str((int)malloc(512), 10));
+//     print("  ");
+//     println(num_to_str((int)malloc(512), 10));
 
-    println(num_to_str(mem_used_size(), 10));
-}
+//     println(num_to_str(mem_used_size(), 10));
+// }
 
 void test_disk() {
-    string contents = mem_512();
+    string contents = malloc(512);
     print(num_to_str((int)contents, 16));
     print("  ");
     print(num_to_str(ata_has_any_disk(), 10));
@@ -175,36 +121,14 @@ void test_disk() {
     }
     print("\n");
     
-    // contents[0] = contents[0] < 'a' ? 'a' : contents[0] + 1;
-    // contents[1] = '!';
-    // contents[2] = '\0';
+    contents[0] = contents[0] < 'a' ? 'a' : contents[0] + 1;
+    contents[1] = '!';
+    contents[2] = '\0';
 
-    // ata_write_sectors(0x3, 1, contents);    
+    ata_write_sectors(0x3, 1, contents);    
     
-    mem_free(contents);
+    free(contents);
 }
-
-// void test_js() {
-//     struct MemoryTablesList* mem = (struct MemoryTablesList*)MEM_DATA_ADDR;
-//     struct JsseyState* state = ((struct JsseyState**)(mem->process_list))[0];
-
-//     string code = mem_10kb();
-//     ata_read_sectors(code, 0x4, 16);
-
-//     for (int i = 0; i<512; i++) {
-//         print(char_to_str(code[i]));
-//     }
-//     print("\n");
-
-//     for (int i=1; i>0; i++);
-//     clear();
-
-//     double result = js_run(code, state, 1000000000, true);
-//     print("End of execution. Result = ");
-//     println(num_to_str((int)result, 10));
-//     print("Used memory: ");
-//     println(num_to_str(mem_get_overall_used(), 10));
-// }
 
 void test_fs() {
     struct FSTableItem* tmpfile;    
@@ -223,14 +147,14 @@ void test_fs() {
         println(contents);
         println("------------");
 
-        mem_free(tmpfile);
-        mem_free(contents);
+        free(tmpfile);
+        free(contents);
     }    
 
     println("");
 
-    struct FSTableItem* file = mem_512();
-    string fileContent = mem_10kb();
+    struct FSTableItem* file = malloc(512);
+    string fileContent = malloc(10 * 1024);
 
     // println("Add new file:");
 
@@ -285,7 +209,7 @@ void test_leb(long initial) {
 }
 
 // void test_wsvm() {
-//     u8* module = mem_10kb();
+//     u8* module = malloc(10 * 1024);
 //     ata_read_sectors(module, 0x1, 1);
 
 //     print(".");
@@ -300,7 +224,7 @@ void test_wsvm() {
     print("Testing WASM Cool VM...");
     println("");
 
-    u8* module = mem_10kb();
+    u8* module = mem_512();
     ata_read_sectors(module, 0x0, 1);
 
     print(".");
@@ -314,12 +238,14 @@ void test_wsvm() {
 void test_newmem() {
     println("Testing new memory allocation system...");
     
-    // Print start address
-    print("Heap start address: 0x");
-    println(num_to_str((int)0x2000000, 16));
-    print("Heap size: ");
-    println(num_to_str(0x1000000, 10));
-    println("");
+    // // Print start address
+    // print("Heap start address: 0x");
+    // println(num_to_str((int)0x2000000, 16));
+    // print("Heap size: ");
+    // println(num_to_str(0x10000000, 10));
+    // println("");
+
+    print_blocks();
     
     // Allocate different sized memory blocks
     void* ptr1 = malloc(512);  // 512 bytes
@@ -336,36 +262,36 @@ void test_newmem() {
     println("");
     
     // Fill blocks with test data
-    if (ptr1) {
-        char* data1 = (char*)ptr1;
-        for (int i = 0; i < 10; i++) {
-            data1[i] = 'A' + i;
-        }
-        data1[10] = '\0';
-        print("Data in first block: ");
-        println(data1);
-    }
+    // if (ptr1) {
+    //     char* data1 = (char*)ptr1;
+    //     for (int i = 0; i < 10; i++) {
+    //         data1[i] = 'A' + i;
+    //     }
+    //     data1[10] = '\0';
+    //     print("Data in first block: ");
+    //     println(data1);
+    // }
     
-    if (ptr2) {
-        char* data2 = (char*)ptr2;
-        for (int i = 0; i < 10; i++) {
-            data2[i] = 'a' + i;
-        }
-        data2[10] = '\0';
-        print("Data in second block: ");
-        println(data2);
-    }
+    // if (ptr2) {
+    //     char* data2 = (char*)ptr2;
+    //     for (int i = 0; i < 10; i++) {
+    //         data2[i] = 'a' + i;
+    //     }
+    //     data2[10] = '\0';
+    //     print("Data in second block: ");
+    //     println(data2);
+    // }
     
-    if (ptr3) {
-        char* data3 = (char*)ptr3;
-        for (int i = 0; i < 10; i++) {
-            data3[i] = '0' + i;
-        }
-        data3[10] = '\0';
-        print("Data in third block: ");
-        println(data3);
-    }
-    println("");
+    // if (ptr3) {
+    //     char* data3 = (char*)ptr3;
+    //     for (int i = 0; i < 10; i++) {
+    //         data3[i] = '0' + i;
+    //     }
+    //     data3[10] = '\0';
+    //     print("Data in third block: ");
+    //     println(data3);
+    // }
+    // println("");
     
     // Print heap information
     print("Heap used: ");
@@ -374,6 +300,7 @@ void test_newmem() {
     print(num_to_str(get_heap_free(), 10));
     println(" bytes");
     println("");
+    print_blocks();
     
     // Free the first block
     print("Freeing first block at: 0x");
@@ -391,6 +318,25 @@ void test_newmem() {
     print(num_to_str(get_heap_free(), 10));
     println(" bytes");
     println("");
+    print_blocks();
+
+    // Free the second block
+    print("Freeing second block at: 0x");
+    println(num_to_str((int)ptr2, 16));
+    free(ptr2);
+    ptr2 = NULL;
+    println("");
+    
+    // Print heap information again after freeing
+    print("After freeing second block:");
+    println("");
+    print("Heap used: ");
+    print(num_to_str(get_heap_used(), 10));
+    print(" bytes, Heap free: ");
+    print(num_to_str(get_heap_free(), 10));
+    println(" bytes");
+    println("");
+    print_blocks();
     
     print("New memory allocation test completed");
     println("");
@@ -413,16 +359,11 @@ void kmain() {
     // print(SCREEN_WIDTH * 2 + 18, memsize > 0 ? num_to_str(memsize / 1024 / 1024, 10) : ">=4Gb");
 
     mem_init();
-    newmem_init((void*)0x2000000, 0x1000000);   // from 32mb, 16mb size
+    newmem_init((void*)0x2000000, 0x10000000);   // from 32mb, 256mb size
 
     //user_init();
 
-    print_cursor_disable();
-
-    // while (true) {
-    //     sys_loop();
-    //     user_loop();
-    // }
+    print_cursor_disable();    
 
     ////////////////////////////////////////////////////////////////
     // TESTS
@@ -457,28 +398,36 @@ void kmain() {
 
     // test_disk();
 
-    // for (int i=1; i > 0; i++);
-    // for (int i=1; i > 0; i++);
+    for (int i=1; i > 0; i++);
+    for (int i=1; i > 0; i++);
+    for (int i=1; i > 0; i++);
     // clear();
 
-    // test_js();
-
-    // clear();
     // test_fs();
 
     clear();
     // test_leb(0);
     // test_leb(15);
     // test_leb(45600666);
+    
+    test_newmem();  // Testing new memory allocation system
 
-    for (int i=1; i > 0; i++);
-    for (int i=1; i > 0; i++);
-    for (int i=1; i > 0; i++);
+    // for (int i=1; i > 0; i++);
+    // for (int i=1; i > 0; i++);
+    // for (int i=1; i > 0; i++);
+    // for (int i=1; i > 0; i++);
+    // for (int i=1; i > 0; i++);
+    // for (int i=1; i > 0; i++);
 
-    clear();
-    // test_newmem();  // Testing new memory allocation system
+    // clear();
 
-    test_wsvm();
+    // test_wsvm();
+
+    // print("Heap used/free: ");
+    // print(num_to_str(get_heap_used(), 10));
+    // print("/");
+    // print(num_to_str(get_heap_free(), 10));
+    // println("");
 
     // println("");
     // println("End of tests");

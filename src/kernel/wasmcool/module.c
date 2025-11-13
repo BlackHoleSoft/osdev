@@ -1,6 +1,6 @@
 #include "wasmcool.h"
 #include "../std/print.h"
-#include "../std/mem.h"
+#include "../std/newmem.h"
 #include "../std/string.h"
 
 // Function to validate the WASM header
