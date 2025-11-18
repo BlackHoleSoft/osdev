@@ -248,95 +248,28 @@ void test_newmem() {
     print_blocks();
     
     // Allocate different sized memory blocks
-    void* ptr1 = malloc(512);  // 512 bytes
+    char* ptr1 = malloc(512);  // 512 bytes
     print("Allocated 512 bytes at: 0x");
     println(num_to_str((int)ptr1, 16));
     
-    void* ptr2 = malloc(1024);  // 1KB
+    char* ptr2 = malloc(1024);  // 1KB
     print("Allocated 1KB at: 0x");
-    println(num_to_str((int)ptr2, 16));
+    println(num_to_str((int)ptr2, 16));    
     
-    void* ptr3 = malloc(16384);  // 16KB
-    print("Allocated 16KB at: 0x");
-    println(num_to_str((int)ptr3, 16));
-    println("");
-    
-    // Fill blocks with test data
-    // if (ptr1) {
-    //     char* data1 = (char*)ptr1;
-    //     for (int i = 0; i < 10; i++) {
-    //         data1[i] = 'A' + i;
-    //     }
-    //     data1[10] = '\0';
-    //     print("Data in first block: ");
-    //     println(data1);
-    // }
-    
-    // if (ptr2) {
-    //     char* data2 = (char*)ptr2;
-    //     for (int i = 0; i < 10; i++) {
-    //         data2[i] = 'a' + i;
-    //     }
-    //     data2[10] = '\0';
-    //     print("Data in second block: ");
-    //     println(data2);
-    // }
-    
-    // if (ptr3) {
-    //     char* data3 = (char*)ptr3;
-    //     for (int i = 0; i < 10; i++) {
-    //         data3[i] = '0' + i;
-    //     }
-    //     data3[10] = '\0';
-    //     print("Data in third block: ");
-    //     println(data3);
-    // }
-    // println("");
-    
-    // Print heap information
-    print("Heap used: ");
-    print(num_to_str(get_heap_used(), 10));
-    print(" bytes, Heap free: ");
-    print(num_to_str(get_heap_free(), 10));
-    println(" bytes");
-    println("");
-    print_blocks();
-    
-    // Free the first block
-    print("Freeing first block at: 0x");
-    println(num_to_str((int)ptr1, 16));
-    free(ptr1);
-    ptr1 = NULL;
-    println("");
-    
-    // Print heap information again after freeing
-    print("After freeing first block:");
-    println("");
-    print("Heap used: ");
-    print(num_to_str(get_heap_used(), 10));
-    print(" bytes, Heap free: ");
-    print(num_to_str(get_heap_free(), 10));
-    println(" bytes");
-    println("");
     print_blocks();
 
-    // Free the second block
-    print("Freeing second block at: 0x");
-    println(num_to_str((int)ptr2, 16));
-    free(ptr2);
-    ptr2 = NULL;
-    println("");
+    for(int i = 0; i < 512; i++) {
+        ptr2[i] = 'B';
+    }
+    ptr2[511] = '\0';
     
-    // Print heap information again after freeing
-    print("After freeing second block:");
-    println("");
-    print("Heap used: ");
-    print(num_to_str(get_heap_used(), 10));
-    print(" bytes, Heap free: ");
-    print(num_to_str(get_heap_free(), 10));
-    println(" bytes");
-    println("");
-    print_blocks();
+    for(int i = 0; i < 512; i++) {
+        ptr1[i] = 'A';
+    }
+    ptr1[511] = '\0';
+    
+    println(ptr1);
+    println(ptr2);
     
     print("New memory allocation test completed");
     println("");
@@ -359,7 +292,7 @@ void kmain() {
     // print(SCREEN_WIDTH * 2 + 18, memsize > 0 ? num_to_str(memsize / 1024 / 1024, 10) : ">=4Gb");
 
     mem_init();
-    newmem_init((void*)0x2000000, 0x10000000);   // from 32mb, 256mb size
+    newmem_init((void*)0x4000000, 0x10000000);   // from 64mb, 256mb size
 
     //user_init();
 
@@ -410,7 +343,7 @@ void kmain() {
     // test_leb(15);
     // test_leb(45600666);
     
-    test_newmem();  // Testing new memory allocation system
+    // test_newmem();  // Testing new memory allocation system
 
     // for (int i=1; i > 0; i++);
     // for (int i=1; i > 0; i++);
@@ -421,7 +354,7 @@ void kmain() {
 
     // clear();
 
-    // test_wsvm();
+    test_wsvm();
 
     // print("Heap used/free: ");
     // print(num_to_str(get_heap_used(), 10));

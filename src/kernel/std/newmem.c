@@ -2,14 +2,16 @@
 #include "string.h"
 #include "print.h"
 
+#define BLOCK_HEADER_SIZE 17
+
 // Static heap information structure
 static struct HeapInfo heap_info = {0};
 
 // Helper function to split a block if it's larger than needed
 static void split_block(struct MemBlockHeader* block, size_t size) {
-    if (block->size > size + sizeof(struct MemBlockHeader)) {
-        struct MemBlockHeader* new_block = (struct MemBlockHeader*)((char*)block + sizeof(struct MemBlockHeader) + size);
-        new_block->size = block->size - sizeof(struct MemBlockHeader) - size;
+    if (block->size > size + BLOCK_HEADER_SIZE) {
+        struct MemBlockHeader* new_block = (struct MemBlockHeader*)((char*)block + BLOCK_HEADER_SIZE + size);
+        new_block->size = block->size - BLOCK_HEADER_SIZE - size;
         new_block->is_free = true;
         new_block->next = block->next;
         
@@ -23,14 +25,14 @@ static void merge_blocks(struct MemBlockHeader* current) {
     struct MemBlockHeader* next = current->next;
     
     if (next != NULL && next->is_free && current->is_free) {
-        current->size = current->size + sizeof(struct MemBlockHeader) + next->size;
+        current->size = current->size + BLOCK_HEADER_SIZE + next->size;
         current->next = next->next;
     }
 }
 
 // Initialize the heap with a given start address and size
 void newmem_init(void* start_addr, size_t size) {
-    if (start_addr == NULL || size < sizeof(struct MemBlockHeader)) {
+    if (start_addr == NULL || size < BLOCK_HEADER_SIZE) {
         return;
     }
     
@@ -39,7 +41,7 @@ void newmem_init(void* start_addr, size_t size) {
     
     // Initialize the first block
     heap_info.first_block = (struct MemBlockHeader*)start_addr;
-    heap_info.first_block->size = size - sizeof(struct MemBlockHeader);
+    heap_info.first_block->size = size - BLOCK_HEADER_SIZE;
     heap_info.first_block->is_free = true;
     heap_info.first_block->next = NULL;
 }
@@ -49,7 +51,7 @@ void* malloc(size_t size) {
     if (size == 0) {
         return NULL;
     }
-    
+
     // Add space for header and align size to 8 bytes for better performance
     size_t aligned_size = (size + 7) & ~7;
     
@@ -65,7 +67,7 @@ void* malloc(size_t size) {
             current->is_free = false;
             
             // Return pointer to the data area
-            return (void*)((char*)current + sizeof(struct MemBlockHeader));
+            return (void*)((char*)current + BLOCK_HEADER_SIZE);
         }
         current = current->next;
     }
@@ -102,7 +104,7 @@ void* realloc(void* ptr, size_t size) {
     size_t aligned_size = (size + 7) & ~7;
     
     // Get the header for the current block
-    struct MemBlockHeader* header = (struct MemBlockHeader*)((char*)ptr - sizeof(struct MemBlockHeader));
+    struct MemBlockHeader* header = (struct MemBlockHeader*)((char*)ptr - BLOCK_HEADER_SIZE);
     
     if (aligned_size <= header->size) {
         // New size is smaller or equal, we might be able to shrink
@@ -129,7 +131,7 @@ void free(void* ptr) {
     }
     
     // Calculate header address
-    struct MemBlockHeader* header = (struct MemBlockHeader*)((char*)ptr - sizeof(struct MemBlockHeader));
+    struct MemBlockHeader* header = (struct MemBlockHeader*)((char*)ptr - BLOCK_HEADER_SIZE);
     
     // Basic validation: check if the header is within our heap range
     if ((char*)header < (char*)heap_info.start_addr || 
@@ -166,7 +168,7 @@ size_t get_heap_used() {
     
     while (current != NULL) {
         if (!current->is_free) {
-            used += current->size + sizeof(struct MemBlockHeader);
+            used += current->size + BLOCK_HEADER_SIZE;
         }
         current = current->next;
     }
@@ -181,7 +183,7 @@ size_t get_heap_free() {
     
     while (current != NULL) {
         if (current->is_free) {
-            free += current->size + sizeof(struct MemBlockHeader);
+            free += current->size + BLOCK_HEADER_SIZE;
         }
         current = current->next;
     }
@@ -191,56 +193,72 @@ size_t get_heap_free() {
 
 void print_blocks() {
     struct MemBlockHeader* current = heap_info.first_block;
-    char buffer[1024]; // Temporary buffer to build the output string
-    int pos = 0;
     
     while (current != NULL) {
-        // Format the current block information
-        char temp[64]; // Buffer for individual block info
-        int len = 0;
-        
-        // Convert current->size to string (simple integer to string conversion)
-        size_t size = current->size;
-        if (size == 0) {
-            temp[len++] = '0';
-        } else {
-            char temp_size[20];
-            int temp_pos = 0;
-            while (size > 0) {
-                temp_size[temp_pos++] = '0' + (size % 10);
-                size /= 10;
-            }
-            // Reverse the digits
-            for (int i = temp_pos - 1; i >= 0; i--) {
-                temp[len++] = temp_size[i];
-            }
-        }
-        
-        temp[len++] = ';';
-        
-        // Add is_free value (0 or 1)
-        temp[len++] = '0' + current->is_free;
-        
-        // Add arrow if there's a next block
-        if (current->next != NULL) {
-            temp[len++] = '-';
-            temp[len++] = '>';
-        } else {
-            temp[len] = '\0'; // Null terminate for the last block
-        }
-        
-        // Copy the formatted block info to the main buffer
-        for (int i = 0; i < len; i++) {
-            buffer[pos++] = temp[i];
-        }
-        
+        print("0x");
+        print(num_to_str(current, 16));
+        print(";");
+        print(num_to_str(current->size, 10));
+        print(";");
+        print(num_to_str(current->is_free, 10));
+        print("->");
+
         current = current->next;
     }
-    
-    // Null terminate the final string
-    buffer[pos] = '\0';
-    
-    // Print the final string
-    print(buffer);
+
     println("");
+
+    // struct MemBlockHeader* current = heap_info.first_block;
+    // char buffer[1024]; // Temporary buffer to build the output string
+    // int pos = 0;
+    
+    // while (current != NULL) {
+    //     // Format the current block information
+    //     char temp[64]; // Buffer for individual block info
+    //     int len = 0;
+        
+    //     // Convert current->size to string (simple integer to string conversion)
+    //     size_t size = current->size;
+    //     if (size == 0) {
+    //         temp[len++] = '0';
+    //     } else {
+    //         char temp_size[20];
+    //         int temp_pos = 0;
+    //         while (size > 0) {
+    //             temp_size[temp_pos++] = '0' + (size % 10);
+    //             size /= 10;
+    //         }
+    //         // Reverse the digits
+    //         for (int i = temp_pos - 1; i >= 0; i--) {
+    //             temp[len++] = temp_size[i];
+    //         }
+    //     }
+        
+    //     temp[len++] = ';';
+        
+    //     // Add is_free value (0 or 1)
+    //     temp[len++] = '0' + current->is_free;
+        
+    //     // Add arrow if there's a next block
+    //     if (current->next != NULL) {
+    //         temp[len++] = '-';
+    //         temp[len++] = '>';
+    //     } else {
+    //         temp[len] = '\0'; // Null terminate for the last block
+    //     }
+        
+    //     // Copy the formatted block info to the main buffer
+    //     for (int i = 0; i < len; i++) {
+    //         buffer[pos++] = temp[i];
+    //     }
+        
+    //     current = current->next;
+    // }
+    
+    // // Null terminate the final string
+    // buffer[pos] = '\0';
+    
+    // // Print the final string
+    // print(buffer);
+    // println("");
 }

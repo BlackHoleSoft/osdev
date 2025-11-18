@@ -1,5 +1,8 @@
 #include "string.h"
 #include "newmem.h"
+// #include "mem.h"
+
+static char num_str[512];
 
 int str_len(string str) {
     int len;
@@ -10,27 +13,31 @@ int str_len(string str) {
 string num_to_str(long num, int r) {
     if (num == 0) return "0";
 
-    string str = malloc(512);
-    str[511] = 0;
+    for (int i = 0; i < 512; i++) num_str[i] = 0;
+
+    // string str = malloc(512);
+    // string str = mem_512();
+    num_str[511] = 0;
     int n = num > 0 ? num : -num;
     int i = 0;   
-    int end = str_len(str) - 1;
+    int end = str_len(num_str) - 1;
 
     while (n > 0) {
         char mod = n % r;
         n /= r;
-        str[end - 1 - i] = mod > 9 ? (mod - 10) + 0x61 : mod + 0x30;
+        num_str[end - 1 - i] = mod > 9 ? (mod - 10) + 0x61 : mod + 0x30;
         i++;
     }
 
     if (num < 0) {
-        str[end - 1 - i] = '-';
+        num_str[end - 1 - i] = '-';
         i++;
     }
 
-    str[end] = '\0';
-    free(str);
-    return (string)((ulong)str + (end - i));
+    num_str[end] = '\0';
+    // free(str);    
+
+    return (string)((ulong)num_str + (end - i));
 }
 
 string char_to_str(char c) {
