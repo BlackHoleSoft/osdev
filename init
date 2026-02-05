@@ -20,14 +20,11 @@ chmod 666 /dev/tty
 
 echo "/bin/sh" > /etc/shells
 
-printf "%s " "Press enter to continue"
-read ans
+# printf "%s " "Press enter to continue"
+# read ans
 
-echo "Starting X"
-export XINITRC=/xinitrc
-#export SHELLS=/etc/shells
-#export SHELL=/bin/sh
-#exec startx 
+clear
+
 exec /bin/sh
 echo "INTERNAL ERROR!!! Cannot run strelka"
 
