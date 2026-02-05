@@ -20,8 +20,11 @@ chmod 666 /dev/tty
 
 echo "/bin/sh" > /etc/shells
 
-# printf "%s " "Press enter to continue"
-# read ans
+# test fb
+dd if=/dev/urandom of=/dev/fb0 bs=1M count=1
+
+printf "%s " "Press enter to continue"
+read ans
 
 clear
 

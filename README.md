@@ -4,12 +4,14 @@
 Затем собрать iso образ системы
 
 ## Сборка nodejs
+
 ```
 docker build -f ./Dockerfile-nodejs -t node-img .
-docker run -it -v $pwd/node:/node node-img    
+docker run -it -v $pwd/node:/node node-img
 ```
 
 ## Сборка образа docker
+
 ```
 docker build -t strelka-linux .
 ```
@@ -18,4 +20,11 @@ docker build -t strelka-linux .
 
 ```
 docker run -it -v $pwd/vol:/vol strelka-linux
+```
+
+## WAT to WASM
+
+```
+npm i -g wabt
+wat2wasm <filename>
 ```
